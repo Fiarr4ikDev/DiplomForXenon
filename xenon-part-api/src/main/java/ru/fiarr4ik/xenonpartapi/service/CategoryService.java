@@ -13,34 +13,58 @@ import ru.fiarr4ik.xenonpartapi.repository.CategoryRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис для работы с категориями.
+ */
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
+    /**
+     * Создает новую категорию.
+     *
+     * @param requestDto данные для создания категории
+     * @return созданная категория
+     */
     public CategoryResponseDTO create(CategoryRequestDTO requestDto) {
         Category category = categoryMapper.toEntity(requestDto);
         Category saved = categoryRepository.save(category);
         return categoryMapper.toResponseDto(saved);
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Получает все категории.
+     *
+     * @return список всех категорий
+     */
     public List<CategoryResponseDTO> findAll() {
         return categoryRepository.findAll().stream()
                 .map(categoryMapper::toResponseDto)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Получает категорию по ID.
+     *
+     * @param id идентификатор категории
+     * @return категория
+     */
     public CategoryResponseDTO findById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Категория не найдена: " + id));
         return categoryMapper.toResponseDto(category);
     }
 
+    /**
+     * Обновляет категорию по ID.
+     *
+     * @param id идентификатор категории
+     * @param requestDto данные для обновления категории
+     * @return обновленная категория
+     */
     public CategoryResponseDTO update(Long id, CategoryRequestDTO requestDto) {
         Category existing = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Категория не найдена: " + id));
@@ -49,6 +73,11 @@ public class CategoryService {
         return categoryMapper.toResponseDto(updated);
     }
 
+    /**
+     * Удаляет категорию по ID.
+     *
+     * @param id идентификатор категории
+     */
     public void delete(Long id) {
         if (!categoryRepository.existsById(id)) {
             throw new EntityNotFoundException("Категория не найдена: " + id);
@@ -56,6 +85,11 @@ public class CategoryService {
         categoryRepository.deleteById(id);
     }
 
+    /**
+     * Получает количество категорий.
+     *
+     * @return количество категорий
+     */
     public long count() {
         return categoryRepository.count();
     }

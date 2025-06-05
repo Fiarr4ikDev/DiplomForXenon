@@ -3,13 +3,21 @@ package ru.fiarr4ik.xenonpartapi.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
+/**
+ * DTO для запроса на создание или обновление поставщика.
+ */
+@Data
 public class SupplierRequestDTO {
 
+    /**
+     * Название поставщика.
+     */
     @NotBlank(message = "Название компании не может быть пустым")
     private String name;
 

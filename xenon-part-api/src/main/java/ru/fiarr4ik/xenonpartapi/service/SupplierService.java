@@ -12,14 +12,22 @@ import ru.fiarr4ik.xenonpartapi.repository.SupplierRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис для работы с поставщиками.
+ */
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
     private final SupplierMapper supplierMapper;
 
+    /**
+     * Создает нового поставщика.
+     *
+     * @param requestDTO данные для создания поставщика
+     * @return созданный поставщик
+     */
     public SupplierResponseDTO create(SupplierRequestDTO requestDTO) {
         try {
             Supplier supplier = supplierMapper.toEntity(requestDTO);
@@ -30,20 +38,36 @@ public class SupplierService {
         }
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Получает всех поставщиков.
+     *
+     * @return список всех поставщиков
+     */
     public List<SupplierResponseDTO> findAll() {
         return supplierRepository.findAll().stream()
                 .map(supplierMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Получает поставщика по ID.
+     *
+     * @param id идентификатор поставщика
+     * @return поставщик
+     */
     public SupplierResponseDTO findById(Long id) {
         Supplier supplier = supplierRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Поставщик не найден: " + id));
         return supplierMapper.toResponseDTO(supplier);
     }
 
+    /**
+     * Обновляет поставщика по ID.
+     *
+     * @param id идентификатор поставщика
+     * @param requestDTO данные для обновления поставщика
+     * @return обновленный поставщик
+     */
     public SupplierResponseDTO update(Long id, SupplierRequestDTO requestDTO) {
         Supplier existing = supplierRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Поставщик не найден: " + id));
@@ -52,6 +76,11 @@ public class SupplierService {
         return supplierMapper.toResponseDTO(updated);
     }
 
+    /**
+     * Удаляет поставщика по ID.
+     *
+     * @param id идентификатор поставщика
+     */
     public void delete(Long id) {
         if (!supplierRepository.existsById(id)) {
             throw new RuntimeException("Поставщик не найден: " + id);
@@ -59,6 +88,11 @@ public class SupplierService {
         supplierRepository.deleteById(id);
     }
 
+    /**
+     * Получает количество поставщиков.
+     *
+     * @return количество поставщиков
+     */
     public long count() {
         return supplierRepository.count();
     }

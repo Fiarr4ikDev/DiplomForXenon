@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.fiarr4ik.xenonpartapi.dto.PartRequestDto;
-import ru.fiarr4ik.xenonpartapi.dto.PartResponseDto;
+import ru.fiarr4ik.xenonpartapi.dto.PartResponseDTO;
 import ru.fiarr4ik.xenonpartapi.entity.Category;
 import ru.fiarr4ik.xenonpartapi.entity.Part;
 import ru.fiarr4ik.xenonpartapi.entity.Supplier;
@@ -16,10 +16,11 @@ import ru.fiarr4ik.xenonpartapi.repository.SupplierRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+/**
+ * Сервис для работы с запчастями.
+ */
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class PartService {
 
     private final PartRepository partRepository;
@@ -27,7 +28,13 @@ public class PartService {
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
 
-    public PartResponseDto create(PartRequestDto requestDto) {
+    /**
+     * Создает новую запчасть.
+     *
+     * @param requestDto данные для создания запчасти
+     * @return созданная запчасть
+     */
+    public PartResponseDTO create(PartRequestDto requestDto) {
         Category category = categoryRepository.findById(requestDto.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Категория не найдена: " + requestDto.getCategoryId()));
         Supplier supplier = supplierRepository.findById(requestDto.getSupplierId())
@@ -41,8 +48,14 @@ public class PartService {
         return partMapper.toResponseDto(saved);
     }
 
-    @Transactional
-    public PartResponseDto update(Long id, PartRequestDto requestDto) {
+    /**
+     * Обновляет запчасть по ID.
+     *
+     * @param id идентификатор запчасти
+     * @param requestDto данные для обновления запчасти
+     * @return обновленная запчасть
+     */
+    public PartResponseDTO update(Long id, PartRequestDto requestDto) {
         Part existing = partRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Запчасть не найдена: " + id));
 
@@ -60,7 +73,11 @@ public class PartService {
         return partMapper.toResponseDto(updated);
     }
 
-    @Transactional
+    /**
+     * Удаляет запчасть по ID.
+     *
+     * @param id идентификатор запчасти
+     */
     public void delete(Long id) {
         if (!partRepository.existsById(id)) {
             throw new RuntimeException("Запчасть не найдена: " + id);
@@ -68,20 +85,34 @@ public class PartService {
         partRepository.deleteById(id);
     }
 
-    @Transactional
-    public PartResponseDto findById(Long id) {
+    /**
+     * Получает запчасть по ID.
+     *
+     * @param id идентификатор запчасти
+     * @return запчасть
+     */
+    public PartResponseDTO findById(Long id) {
         Part part = partRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Запчасть не найдена: " + id));
         return partMapper.toResponseDto(part);
     }
 
-    @Transactional
-    public List<PartResponseDto> findAll() {
+    /**
+     * Получает все запчасти.
+     *
+     * @return список всех запчастей
+     */
+    public List<PartResponseDTO> findAll() {
         return partRepository.findAll().stream()
                 .map(partMapper::toResponseDto)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Получает количество запчастей.
+     *
+     * @return количество запчастей
+     */
     public long count() {
         return partRepository.count();
     }

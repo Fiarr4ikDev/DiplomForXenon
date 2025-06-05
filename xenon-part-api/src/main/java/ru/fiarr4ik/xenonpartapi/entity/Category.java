@@ -6,20 +6,31 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+/**
+ * Сущность, представляющая категорию запчастей.
+ */
 @Entity
-@Table(name = "category")
+@Table(name = "categories")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Category {
 
+    /**
+     * Уникальный идентификатор категории.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
 
+    /**
+     * Название категории.
+     */
     @Column(name = "name", nullable = false)
     private String name;
 

@@ -22,6 +22,9 @@ import ru.fiarr4ik.xenonpartapi.service.SupplierService;
 
 import java.util.List;
 
+/**
+ * Контроллер для работы с поставщиками.
+ */
 @RestController
 @RequestMapping("/api/suppliers")
 @RequiredArgsConstructor
@@ -30,6 +33,12 @@ public class SupplierController {
 
     private final SupplierService supplierService;
 
+    /**
+     * Создает нового поставщика.
+     *
+     * @param requestDto данные для создания поставщика
+     * @return созданный поставщик
+     */
     @Operation(summary = "Создать нового поставщика")
     @ApiResponse(responseCode = "200", description = "Поставщик успешно создан",
             content = @Content(schema = @Schema(implementation = SupplierResponseDTO.class)))
@@ -39,6 +48,11 @@ public class SupplierController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Получает всех поставщиков.
+     *
+     * @return список всех поставщиков
+     */
     @Operation(summary = "Получить всех поставщиков")
     @ApiResponse(responseCode = "200", description = "Список поставщиков",
             content = @Content(schema = @Schema(implementation = SupplierResponseDTO.class)))
@@ -48,6 +62,12 @@ public class SupplierController {
         return ResponseEntity.ok(suppliers);
     }
 
+    /**
+     * Получает поставщика по ID.
+     *
+     * @param id идентификатор поставщика
+     * @return поставщик
+     */
     @Operation(summary = "Получить поставщика по ID")
     @ApiResponse(responseCode = "200", description = "Поставщик найден",
             content = @Content(schema = @Schema(implementation = SupplierResponseDTO.class)))
@@ -58,8 +78,15 @@ public class SupplierController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Обновляет поставщика по ID.
+     *
+     * @param id идентификатор поставщика
+     * @param requestDto данные для обновления поставщика
+     * @return обновленный поставщик
+     */
     @Operation(summary = "Обновить поставщика по ID")
-    @ApiResponse(responseCode = "200", description = "Поставщик успешно обновлён",
+    @ApiResponse(responseCode = "200", description = "Поставщик успешно обновлен",
             content = @Content(schema = @Schema(implementation = SupplierResponseDTO.class)))
     @ApiResponse(responseCode = "404", description = "Поставщик не найден")
     @PutMapping("/{id}")
@@ -69,8 +96,14 @@ public class SupplierController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Удаляет поставщика по ID.
+     *
+     * @param id идентификатор поставщика
+     * @return пустой ответ
+     */
     @Operation(summary = "Удалить поставщика по ID")
-    @ApiResponse(responseCode = "204", description = "Поставщик успешно удалён")
+    @ApiResponse(responseCode = "204", description = "Поставщик успешно удален")
     @ApiResponse(responseCode = "404", description = "Поставщик не найден")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
@@ -78,6 +111,11 @@ public class SupplierController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Получает количество поставщиков.
+     *
+     * @return количество поставщиков
+     */
     @Operation(summary = "Получить количество поставщиков")
     @ApiResponse(responseCode = "200", description = "Количество поставщиков получено")
     @GetMapping("/count")

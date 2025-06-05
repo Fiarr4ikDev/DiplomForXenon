@@ -1,16 +1,25 @@
 package ru.fiarr4ik.xenonpartapi.dto;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
+/**
+ * DTO для запроса на создание или обновление записи инвентаря.
+ */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class InventoryRequestDTO {
+
+    /**
+     * Идентификатор детали.
+     */
+    @NotNull(message = "ID детали не может быть пустым")
     private Long partId;
-    private Integer quantityInStock;
-    private LocalDateTime lastRestockDate;
+
+    /**
+     * Количество деталей.
+     */
+    @NotNull(message = "Количество не может быть пустым")
+    @Min(value = 0, message = "Количество не может быть отрицательным")
+    private Integer quantity;
 } 

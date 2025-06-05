@@ -16,6 +16,9 @@ import ru.fiarr4ik.xenonpartapi.service.InventoryService;
 
 import java.util.List;
 
+/**
+ * Контроллер для работы с инвентарем.
+ */
 @RestController
 @RequestMapping("/api/inventory")
 @RequiredArgsConstructor
@@ -24,6 +27,12 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
+    /**
+     * Создает новую запись инвентаря.
+     *
+     * @param requestDto данные для создания записи инвентаря
+     * @return созданная запись инвентаря
+     */
     @Operation(summary = "Создать новую запись инвентаря")
     @ApiResponse(responseCode = "200", description = "Запись инвентаря успешно создана",
             content = @Content(schema = @Schema(implementation = InventoryResponseDTO.class)))
@@ -33,6 +42,11 @@ public class InventoryController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Получает все записи инвентаря.
+     *
+     * @return список всех записей инвентаря
+     */
     @Operation(summary = "Получить все записи инвентаря")
     @ApiResponse(responseCode = "200", description = "Список записей инвентаря",
             content = @Content(schema = @Schema(implementation = InventoryResponseDTO.class)))
@@ -42,6 +56,12 @@ public class InventoryController {
         return ResponseEntity.ok(inventory);
     }
 
+    /**
+     * Получает запись инвентаря по ID.
+     *
+     * @param id идентификатор записи инвентаря
+     * @return запись инвентаря
+     */
     @Operation(summary = "Получить запись инвентаря по ID")
     @ApiResponse(responseCode = "200", description = "Запись инвентаря найдена",
             content = @Content(schema = @Schema(implementation = InventoryResponseDTO.class)))
@@ -52,6 +72,13 @@ public class InventoryController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Обновляет запись инвентаря по ID.
+     *
+     * @param id идентификатор записи инвентаря
+     * @param requestDto данные для обновления записи инвентаря
+     * @return обновленная запись инвентаря
+     */
     @Operation(summary = "Обновить запись инвентаря по ID")
     @ApiResponse(responseCode = "200", description = "Запись инвентаря успешно обновлена",
             content = @Content(schema = @Schema(implementation = InventoryResponseDTO.class)))
@@ -63,6 +90,12 @@ public class InventoryController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Удаляет запись инвентаря по ID.
+     *
+     * @param id идентификатор записи инвентаря
+     * @return пустой ответ
+     */
     @Operation(summary = "Удалить запись инвентаря по ID")
     @ApiResponse(responseCode = "204", description = "Запись инвентаря успешно удалена")
     @ApiResponse(responseCode = "404", description = "Запись инвентаря не найдена")
@@ -72,6 +105,11 @@ public class InventoryController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Получает количество записей инвентаря.
+     *
+     * @return количество записей инвентаря
+     */
     @Operation(summary = "Получить количество записей инвентаря")
     @ApiResponse(responseCode = "200", description = "Количество записей инвентаря получено")
     @GetMapping("/count")

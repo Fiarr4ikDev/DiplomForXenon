@@ -6,20 +6,31 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+/**
+ * Сущность, представляющая поставщика запчастей.
+ */
 @Entity
-@Table(name = "supplier")
+@Table(name = "suppliers")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Supplier {
 
+    /**
+     * Уникальный идентификатор поставщика.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "supplier_id", nullable = false)
     private Long supplierId;
 
+    /**
+     * Название поставщика.
+     */
     @Column(name = "name", nullable = false)
     private String name;
 
