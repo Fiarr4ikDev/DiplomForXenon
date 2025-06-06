@@ -14,7 +14,7 @@ public class InventoryRequestDTO {
      * Идентификатор детали.
      */
     @NotNull(message = "ID детали не может быть пустым")
-    private Long InventoryId;
+    private Long PartId;
 
     /**
      * Количество деталей.
