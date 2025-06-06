@@ -1,26 +1,29 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   AppBar,
   Box,
-  CssBaseline,
   Drawer,
   IconButton,
   List,
-  ListItemButton,
+  ListItem,
   ListItemIcon,
   ListItemText,
   Toolbar,
   Typography,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Build as BuildIcon,
-  LocalShipping as LocalShippingIcon,
-  Category as CategoryIcon,
-  Inventory as InventoryIcon,
   Home as HomeIcon,
+  Build as BuildIcon,
+  Category as CategoryIcon,
+  LocalShipping as LocalShippingIcon,
+  Inventory as InventoryIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
+import { useSettings } from '../contexts/SettingsContext';
 
 const drawerWidth = 240;
 
@@ -29,40 +32,47 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const menuItems = [
-    { text: 'Главная', icon: <HomeIcon />, path: '/' },
-    { text: 'Категории', icon: <CategoryIcon />, path: '/categories' },
-    { text: 'Поставщики', icon: <LocalShippingIcon />, path: '/suppliers' },
-    { text: 'Запчасти', icon: <BuildIcon />, path: '/parts' },
-    { text: 'Инвентарь', icon: <InventoryIcon />, path: '/inventory' },
-  ];
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { settings } = useSettings();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const menuItems = [
+    { text: 'Главная', icon: <HomeIcon />, path: '/' },
+    { text: 'Запчасти', icon: <BuildIcon />, path: '/parts' },
+    { text: 'Категории', icon: <CategoryIcon />, path: '/categories' },
+    { text: 'Поставщики', icon: <LocalShippingIcon />, path: '/suppliers' },
+    { text: 'Инвентарь', icon: <InventoryIcon />, path: '/inventory' },
+    { text: 'Настройки', icon: <SettingsIcon />, path: '/settings' },
+  ];
+
   const drawer = (
     <div>
-      <Toolbar />
+      <Toolbar>
+        <Typography variant="h6" noWrap component="div">
+          Меню
+        </Typography>
+      </Toolbar>
       <List>
         {menuItems.map((item) => (
-          <ListItemButton
+          <ListItem
             key={item.text}
-            onClick={() => navigate(item.path)}
-            selected={location.pathname === item.path}
+            component={RouterLink}
+            to={item.path}
+            onClick={() => isMobile && handleDrawerToggle()}
             sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              '&:hover': {
+                backgroundColor: 'action.hover',
               },
             }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.text} />
-          </ListItemButton>
+          </ListItem>
         ))}
       </List>
     </div>
@@ -70,7 +80,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
       <AppBar
         position="fixed"
         sx={{
@@ -89,7 +98,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Xenon Parts Management
+            Система управления запчастями
           </Typography>
         </Toolbar>
       </AppBar>
@@ -98,32 +107,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
         <Drawer
-          variant="temporary"
+          variant={isMobile ? 'temporary' : 'permanent'}
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
+              backgroundColor: theme.palette.background.paper,
             },
           }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-            },
-          }}
-          open
         >
           {drawer}
         </Drawer>
@@ -134,9 +130,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           flexGrow: 1,
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
+          mt: '64px',
         }}
       >
-        <Toolbar />
         {children}
       </Box>
     </Box>
