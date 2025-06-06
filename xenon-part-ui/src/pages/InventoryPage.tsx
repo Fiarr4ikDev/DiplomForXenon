@@ -110,6 +110,7 @@ const InventoryPage: React.FC = () => {
       axios.put(`${API_URL}/inventory/${data.id}`, data.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['parts'] });
       setOpen(false);
       setOpenAddQuantity(false);
       setOpenRemoveQuantity(false);
@@ -265,6 +266,8 @@ const InventoryPage: React.FC = () => {
   }
 
   const getPartName = (partId: number) => {
+    console.log('Searching for partId:', partId, 'Type:', typeof partId);
+    console.log('Available parts IDs:', parts?.map(p => ({ id: p.partId, type: typeof p.partId })));
     const part = parts?.find((p: Part) => p.partId === partId);
     return part ? part.name : 'Неизвестная запчасть';
   };

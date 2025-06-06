@@ -11,6 +11,7 @@ import ru.fiarr4ik.xenonpartapi.entity.Inventory;
 public interface InventoryMapper {
     Inventory toEntity(InventoryRequestDTO dto);
 
+    @Mapping(source = "part.partId", target = "partId")
     InventoryResponseDTO toDto(Inventory entity);
 
     void updateEntityFromDto(InventoryRequestDTO dto, @MappingTarget Inventory entity);
