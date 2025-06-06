@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -13,6 +13,10 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  Button,
+  Avatar,
+  MenuItem,
+  Menu,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -23,8 +27,11 @@ import {
   Inventory as InventoryIcon,
   Settings as SettingsIcon,
   Tune as TuneIcon,
+  Person as PersonIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const drawerWidth = 240;
 
@@ -37,9 +44,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { settings } = useSettings();
+  const { isAuthenticated, username, logout } = useAuth();
+  const location = useLocation();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
   };
 
   const menuItems = [
@@ -53,16 +73,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   const drawer = (
-    <div>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
         p: 2,
         borderBottom: '1px solid',
         borderColor: 'divider'
       }}>
-        <Typography variant="h6" sx={{ 
+        <Typography variant="h6" sx={{
           fontWeight: 'bold',
           color: 'primary.main',
           fontSize: '1.5rem'
@@ -70,25 +96,99 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           Ксенон+
         </Typography>
       </Box>
-      <List sx={{ overflowX: 'hidden' }}>
-        {menuItems.map((item) => (
+      {isAuthenticated ? (
+        <List sx={{ overflowX: 'hidden', flexGrow: 1 }}>
+          {menuItems.map((item) => (
+            <ListItem
+              key={item.text}
+              component={RouterLink}
+              to={item.path}
+              onClick={() => isMobile && handleDrawerToggle()}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                }
+              }}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItem>
+          ))}
+
           <ListItem
-            key={item.text}
-            component={RouterLink}
-            to={item.path}
-            onClick={() => isMobile && handleDrawerToggle()}
+            onClick={handleMenu}
             sx={{
+              mt: 'auto',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              cursor: 'pointer',
               '&:hover': {
                 backgroundColor: 'action.hover',
               }
             }}
           >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
+            <ListItemIcon>
+              <Avatar sx={{
+                bgcolor: 'primary.main',
+                width: 24,
+                height: 24,
+              }}>
+                <PersonIcon fontSize="small" />
+              </Avatar>
+            </ListItemIcon>
+            <ListItemText primary={username || 'Пользователь'} />
           </ListItem>
-        ))}
-      </List>
-    </div>
+
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={handleMenuClose} component={RouterLink} to="/profile">
+              <ListItemIcon>
+                <PersonIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Поменять информацию</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => {
+              handleMenuClose();
+              logout();
+              if (isMobile) handleDrawerToggle();
+            }}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Выйти</ListItemText>
+            </MenuItem>
+          </Menu>
+
+        </List>
+      ) : (
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <Typography variant="body1" gutterBottom>
+            Сначала войдите в аккаунт
+          </Typography>
+          <Button
+            component={RouterLink}
+            to="/login"
+            variant="contained"
+            onClick={() => isMobile && handleDrawerToggle()}
+          >
+            Войти
+          </Button>
+        </Box>
+      )}
+    </Box>
   );
 
   return (
@@ -131,7 +231,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               boxSizing: 'border-box',
               width: drawerWidth,
               backgroundColor: theme.palette.background.paper,
-              overflowX: 'hidden'
+              overflowX: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
             },
           }}
         >
@@ -147,26 +249,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: '64px',
+          minHeight: 'calc(100vh - 64px)',
         }}
       >
-        {children}
-
-        {/* Footer */}
-        <Box
-          component="footer"
-          sx={{
-            py: 2, // padding top and bottom
-            px: 3, // padding left and right
-            mt: 'auto', // push to bottom
-            backgroundColor: theme.palette.primary.dark, // dark primary color background
-            color: theme.palette.primary.contrastText, // white text
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="body2">
-            © {new Date().getFullYear()} Система управления запчастей "Ксенон+". Все права защищены.
-          </Typography>
-        </Box>
+        {isAuthenticated || isAuthPage ? (
+          children
+        ) : (
+          <Box sx={{ flexGrow: 1 }} />
+        )}
       </Box>
     </Box>
   );

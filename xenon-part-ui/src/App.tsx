@@ -15,7 +15,12 @@ import SuppliersPage from './pages/SuppliersPage';
 import InventoryPage from './pages/InventoryPage';
 import SettingsPage from './pages/SettingsPage';
 import ConfigurationPage from './pages/ConfigurationPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import ProfilePage from './pages/ProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,12 +47,39 @@ const AppContent = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/parts" element={<PartsPage />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/suppliers" element={<SuppliersPage />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/configuration" element={<ConfigurationPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/parts" element={
+              <ProtectedRoute>
+                <PartsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <CategoriesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/suppliers" element={
+              <ProtectedRoute>
+                <SuppliersPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/inventory" element={
+              <ProtectedRoute>
+                <InventoryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/configuration" element={
+              <ProtectedRoute>
+                <ConfigurationPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Routes>
         </Layout>
       </Router>
@@ -58,9 +90,11 @@ const AppContent = () => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <SettingsProvider>
-        <AppContent />
-      </SettingsProvider>
+      <AuthProvider>
+        <SettingsProvider>
+          <AppContent />
+        </SettingsProvider>
+      </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
