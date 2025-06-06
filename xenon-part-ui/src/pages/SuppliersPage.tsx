@@ -17,6 +17,8 @@ import {
   TextField,
   IconButton,
   Tooltip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,14 +47,17 @@ interface SupplierRequest {
 
 const SuppliersPage: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const queryClient = useQueryClient();
-  const [errors, setErrors] = useState({
-    name: false,
-    contactPerson: false,
-    phone: false,
-    email: false,
-    address: false
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'success' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
   });
 
   const { data: suppliers, isLoading } = useQuery({
@@ -87,100 +92,58 @@ const SuppliersPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await axios.delete(`${API_URL}/suppliers/${id}`);
+      try {
+        await axios.delete(`${API_URL}/suppliers/${id}`);
+      } catch (error: any) {
+        if (error.response?.status === 500 && error.response?.data?.message?.includes('violates foreign key constraint')) {
+          throw new Error('Невозможно удалить поставщика, так как существуют связанные запчасти');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      setNotification({
+        open: true,
+        message: 'Поставщик успешно удален',
+        severity: 'success'
+      });
     },
+    onError: (error: Error) => {
+      setNotification({
+        open: true,
+        message: error.message || 'Произошла ошибка при удалении поставщика',
+        severity: 'error'
+      });
+    }
   });
 
-  const validateField = (name: string, value: any) => {
-    switch (name) {
-      case 'name':
-        return !value || value.trim() === '';
-      case 'phone':
-        return !value || value.trim() === '';
-      case 'email':
-        return !value || value.trim() === '' || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value);
-      default:
-        return false;
-    }
-  };
-
-  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, name: validateField('name', value) }));
-    if (selectedSupplier) {
-      setSelectedSupplier({
-        ...selectedSupplier,
-        name: value
+  const validateForm = (data: SupplierRequest): boolean => {
+    if (!data.name || data.name.trim() === '') {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите название поставщика',
+        severity: 'error'
       });
+      return false;
     }
-  };
-
-  const handleContactPersonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    if (selectedSupplier) {
-      setSelectedSupplier({
-        ...selectedSupplier,
-        contactPerson: value
+    if (!data.phone || data.phone.trim() === '') {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите номер телефона',
+        severity: 'error'
       });
+      return false;
     }
-  };
-
-  const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, phone: validateField('phone', value) }));
-    if (selectedSupplier) {
-      setSelectedSupplier({
-        ...selectedSupplier,
-        phone: value
+    if (!data.email || data.email.trim() === '' || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(data.email)) {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите корректный email',
+        severity: 'error'
       });
+      return false;
     }
-  };
-
-  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, email: validateField('email', value) }));
-    if (selectedSupplier) {
-      setSelectedSupplier({
-        ...selectedSupplier,
-        email: value
-      });
-    }
-  };
-
-  const handleAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    if (selectedSupplier) {
-      setSelectedSupplier({
-        ...selectedSupplier,
-        address: value
-      });
-    }
-  };
-
-  const handleClickOpen = () => {
-    setOpen(true);
-    setErrors({
-      name: true,
-      contactPerson: false,
-      phone: true,
-      email: true,
-      address: false
-    });
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setSelectedSupplier(null);
-    setErrors({
-      name: false,
-      contactPerson: false,
-      phone: false,
-      email: false,
-      address: false
-    });
+    return true;
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -194,11 +157,55 @@ const SuppliersPage: React.FC = () => {
       address: formData.get('address') as string,
     };
 
+    if (!validateForm(supplierData)) {
+      return;
+    }
+
     if (selectedSupplier) {
       updateMutation.mutate({ id: selectedSupplier.supplierId, data: supplierData });
+      setNotification({
+        open: true,
+        message: 'Поставщик успешно обновлен',
+        severity: 'success'
+      });
     } else {
       createMutation.mutate(supplierData);
+      setNotification({
+        open: true,
+        message: 'Поставщик успешно добавлен',
+        severity: 'success'
+      });
     }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+  };
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedSupplier(null);
+  };
+
+  const handleDeleteClick = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setOpenDelete(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedSupplier) {
+      deleteMutation.mutate(selectedSupplier.supplierId);
+      setOpenDelete(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setOpenDelete(false);
+    setSelectedSupplier(null);
   };
 
   if (isLoading) {
@@ -254,11 +261,7 @@ const SuppliersPage: React.FC = () => {
                   </Tooltip>
                   <Tooltip title="Удалить">
                     <IconButton
-                      onClick={() => {
-                        if (window.confirm('Вы уверены, что хотите удалить этого поставщика?')) {
-                          deleteMutation.mutate(supplier.supplierId);
-                        }
-                      }}
+                      onClick={() => handleDeleteClick(supplier)}
                       color="error"
                     >
                       <DeleteIcon />
@@ -271,70 +274,44 @@ const SuppliersPage: React.FC = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>
-          {selectedSupplier ? 'Редактировать поставщика' : 'Добавить поставщика'}
-        </DialogTitle>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit}>
+          <DialogTitle>
+            {selectedSupplier ? 'Редактировать поставщика' : 'Добавить поставщика'}
+          </DialogTitle>
           <DialogContent>
-            <TextField
-              margin="dense"
-              name="name"
-              label="Название компании"
-              fullWidth
-              variant="outlined"
-              value={selectedSupplier?.name || ''}
-              onChange={handleNameChange}
-              required
-              error={errors.name}
-              helperText={errors.name ? 'Название компании не может быть пустым' : ''}
-            />
-            <TextField
-              margin="dense"
-              name="contactPerson"
-              label="Контактное лицо"
-              fullWidth
-              variant="outlined"
-              value={selectedSupplier?.contactPerson || ''}
-              onChange={handleContactPersonChange}
-            />
-            <TextField
-              margin="dense"
-              name="phone"
-              label="Телефон"
-              fullWidth
-              variant="outlined"
-              value={selectedSupplier?.phone || ''}
-              onChange={handlePhoneChange}
-              required
-              error={errors.phone}
-              helperText={errors.phone ? 'Телефон не может быть пустым' : ''}
-            />
-            <TextField
-              margin="dense"
-              name="email"
-              label="Email"
-              fullWidth
-              variant="outlined"
-              value={selectedSupplier?.email || ''}
-              onChange={handleEmailChange}
-              required
-              error={errors.email}
-              helperText={errors.email ? 
-                (selectedSupplier?.email && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(selectedSupplier.email) ? 
-                  'Некорректный формат email' : 
-                  'Email не может быть пустым') : 
-                ''}
-            />
-            <TextField
-              margin="dense"
-              name="address"
-              label="Адрес"
-              fullWidth
-              variant="outlined"
-              value={selectedSupplier?.address || ''}
-              onChange={handleAddressChange}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+              <TextField
+                name="name"
+                label="Название"
+                fullWidth
+                defaultValue={selectedSupplier?.name}
+              />
+              <TextField
+                name="contactPerson"
+                label="Контактное лицо"
+                fullWidth
+                defaultValue={selectedSupplier?.contactPerson}
+              />
+              <TextField
+                name="phone"
+                label="Телефон"
+                fullWidth
+                defaultValue={selectedSupplier?.phone}
+              />
+              <TextField
+                name="email"
+                label="Email"
+                fullWidth
+                defaultValue={selectedSupplier?.email}
+              />
+              <TextField
+                name="address"
+                label="Адрес"
+                fullWidth
+                defaultValue={selectedSupplier?.address}
+              />
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Отмена</Button>
@@ -344,6 +321,38 @@ const SuppliersPage: React.FC = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      <Dialog
+        open={openDelete}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить поставщика "{selectedSupplier?.name}"?
+            Это действие необратимо.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>Отмена</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

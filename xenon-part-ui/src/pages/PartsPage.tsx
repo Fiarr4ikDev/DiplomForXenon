@@ -20,7 +20,8 @@ import {
   Select,
   FormControl,
   InputLabel,
-  FormHelperText,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -28,6 +29,7 @@ import { Add as AddIcon } from '@mui/icons-material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { SelectChangeEvent } from '@mui/material';
+import { Typography } from '@mui/material';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -62,6 +64,7 @@ interface Supplier {
 
 const PartsPage: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [newPart, setNewPart] = useState<PartRequest>({
     name: '',
@@ -70,12 +73,14 @@ const PartsPage: React.FC = () => {
     supplierId: 0,
     unitPrice: 0
   });
-  const [errors, setErrors] = useState({
-    name: false,
-    description: false,
-    categoryId: false,
-    supplierId: false,
-    unitPrice: false
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'success' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
   });
   const queryClient = useQueryClient();
 
@@ -128,192 +133,146 @@ const PartsPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await axios.delete(`${API_URL}/parts/${id}`);
+      try {
+        await axios.delete(`${API_URL}/parts/${id}`);
+      } catch (error: any) {
+        if (error.response?.status === 500 && error.response?.data?.message?.includes('violates foreign key constraint')) {
+          throw new Error('Невозможно удалить запчасть, так как она используется в инвентаре');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      setNotification({
+        open: true,
+        message: 'Запчасть успешно удалена',
+        severity: 'success'
+      });
     },
+    onError: (error: Error) => {
+      setNotification({
+        open: true,
+        message: error.message || 'Произошла ошибка при удалении запчасти',
+        severity: 'error'
+      });
+    }
   });
 
-  const validateField = (name: string, value: any) => {
-    switch (name) {
-      case 'name':
-        return !value || value.trim() === '';
-      case 'description':
-        return !value || value.trim() === '';
-      case 'categoryId':
-        return !value || value === 0;
-      case 'supplierId':
-        return !value || value === 0;
-      case 'unitPrice':
-        return !value || Number(value) <= 0;
-      default:
-        return false;
+  const validateForm = (data: PartRequest): boolean => {
+    if (!data.name || data.name.trim() === '') {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите название запчасти',
+        severity: 'error'
+      });
+      return false;
     }
-  };
-
-  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, name: validateField('name', value) }));
-    if (selectedPart) {
-      setSelectedPart({
-        ...selectedPart,
-        name: value
+    if (!data.description || data.description.trim() === '') {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите описание запчасти',
+        severity: 'error'
       });
-    } else {
-      setNewPart({
-        ...newPart,
-        name: value
-      });
+      return false;
     }
-  };
-
-  const handleDescriptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, description: validateField('description', value) }));
-    if (selectedPart) {
-      setSelectedPart({
-        ...selectedPart,
-        description: value
+    if (!data.categoryId || data.categoryId === 0) {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, выберите категорию',
+        severity: 'error'
       });
-    } else {
-      setNewPart({
-        ...newPart,
-        description: value
-      });
+      return false;
     }
-  };
-
-  const handleCategoryChange = (event: SelectChangeEvent<number>) => {
-    const categoryId = event.target.value as number;
-    setErrors(prev => ({ ...prev, categoryId: validateField('categoryId', categoryId) }));
-    const category = categories?.find((c: Category) => c.categoryId === categoryId);
-    if (selectedPart && category) {
-      setSelectedPart({
-        ...selectedPart,
-        categoryId: category.categoryId,
-        categoryName: category.name
+    if (!data.supplierId || data.supplierId === 0) {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, выберите поставщика',
+        severity: 'error'
       });
-    } else if (category) {
-      setNewPart({
-        ...newPart,
-        categoryId: category.categoryId
-      });
+      return false;
     }
-  };
-
-  const handleSupplierChange = (event: SelectChangeEvent<number>) => {
-    const supplierId = event.target.value as number;
-    setErrors(prev => ({ ...prev, supplierId: validateField('supplierId', supplierId) }));
-    const supplier = suppliers?.find((s: Supplier) => s.supplierId === supplierId);
-    if (selectedPart && supplier) {
-      setSelectedPart({
-        ...selectedPart,
-        supplierId: supplier.supplierId,
-        supplierName: supplier.name
+    if (!data.unitPrice || data.unitPrice <= 0) {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите корректную цену',
+        severity: 'error'
       });
-    } else if (supplier) {
-      setNewPart({
-        ...newPart,
-        supplierId: supplier.supplierId
-      });
+      return false;
     }
-  };
-
-  const handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, unitPrice: validateField('unitPrice', value) }));
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      if (selectedPart) {
-        setSelectedPart({
-          ...selectedPart,
-          unitPrice: value
-        });
-      } else {
-        setNewPart({
-          ...newPart,
-          unitPrice: value === '' ? 0 : Number(value)
-        });
-      }
-    }
+    return true;
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const price = selectedPart ? Number(selectedPart.unitPrice) : newPart.unitPrice;
-    
-    if (isNaN(price) || price <= 0) {
-      alert('Пожалуйста, введите корректную цену');
+    const formData = new FormData(event.currentTarget);
+    const partData: PartRequest = {
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      categoryId: Number(formData.get('categoryId')),
+      supplierId: Number(formData.get('supplierId')),
+      unitPrice: Number(formData.get('unitPrice'))
+    };
+
+    if (!validateForm(partData)) {
       return;
     }
 
     if (selectedPart) {
-      updateMutation.mutate({ 
-        id: selectedPart.partId, 
-        data: {
-          name: selectedPart.name,
-          description: selectedPart.description,
-          categoryId: selectedPart.categoryId,
-          supplierId: selectedPart.supplierId,
-          unitPrice: price
-        }
+      updateMutation.mutate({ id: selectedPart.partId, data: partData });
+      setNotification({
+        open: true,
+        message: 'Запчасть успешно обновлена',
+        severity: 'success'
       });
     } else {
-      createMutation.mutate({
-        ...newPart,
-        unitPrice: price
+      createMutation.mutate(partData);
+      setNotification({
+        open: true,
+        message: 'Запчасть успешно добавлена',
+        severity: 'success'
       });
     }
   };
 
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+  };
+
   const handleClickOpen = () => {
     setOpen(true);
-    setErrors({
-      name: true,
-      description: true,
-      categoryId: true,
-      supplierId: true,
-      unitPrice: true
-    });
   };
 
   const handleClose = () => {
     setOpen(false);
     setSelectedPart(null);
-    setNewPart({
-      name: '',
-      description: '',
-      categoryId: 0,
-      supplierId: 0,
-      unitPrice: 0
-    });
-    setErrors({
-      name: false,
-      description: false,
-      categoryId: false,
-      supplierId: false,
-      unitPrice: false
-    });
+  };
+
+  const handleDeleteClick = (part: Part) => {
+    setSelectedPart(part);
+    setOpenDelete(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedPart) {
+      deleteMutation.mutate(selectedPart.partId);
+      setOpenDelete(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setOpenDelete(false);
+    setSelectedPart(null);
   };
 
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <h2>Запчасти</h2>
+        <Typography variant="h5">Запчасти</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => {
-            setSelectedPart(null);
-            setNewPart({
-              name: '',
-              description: '',
-              categoryId: 0,
-              supplierId: 0,
-              unitPrice: 0
-            });
-            handleClickOpen();
-          }}
+          onClick={handleClickOpen}
         >
           Добавить запчасть
         </Button>
@@ -340,7 +299,7 @@ const PartsPage: React.FC = () => {
                 <TableCell>{part.description}</TableCell>
                 <TableCell>{part.categoryName}</TableCell>
                 <TableCell>{part.supplierName}</TableCell>
-                <TableCell>{part.unitPrice} ₽</TableCell>
+                <TableCell>{part.unitPrice}</TableCell>
                 <TableCell>
                   <Tooltip title="Редактировать">
                     <IconButton
@@ -355,11 +314,7 @@ const PartsPage: React.FC = () => {
                   </Tooltip>
                   <Tooltip title="Удалить">
                     <IconButton
-                      onClick={() => {
-                        if (window.confirm('Вы уверены, что хотите удалить эту запчасть?')) {
-                          deleteMutation.mutate(part.partId);
-                        }
-                      }}
+                      onClick={() => handleDeleteClick(part)}
                       color="error"
                     >
                       <DeleteIcon />
@@ -373,81 +328,63 @@ const PartsPage: React.FC = () => {
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {selectedPart ? 'Редактировать запчасть' : 'Добавить запчасть'}
-        </DialogTitle>
         <form onSubmit={handleSubmit}>
+          <DialogTitle>
+            {selectedPart ? 'Редактировать запчасть' : 'Добавить запчасть'}
+          </DialogTitle>
           <DialogContent>
-            <TextField
-              margin="dense"
-              name="name"
-              label="Название"
-              fullWidth
-              variant="outlined"
-              value={selectedPart?.name || newPart.name}
-              onChange={handleNameChange}
-              required
-              error={errors.name}
-              helperText={errors.name ? 'Название не может быть пустым' : ''}
-            />
-            <TextField
-              margin="dense"
-              name="description"
-              label="Описание"
-              fullWidth
-              variant="outlined"
-              value={selectedPart?.description || newPart.description}
-              onChange={handleDescriptionChange}
-              required
-              error={errors.description}
-              helperText={errors.description ? 'Описание не может быть пустым' : ''}
-            />
-            <FormControl fullWidth margin="dense" error={errors.categoryId}>
-              <InputLabel>Категория</InputLabel>
-              <Select
-                name="categoryId"
-                value={selectedPart?.categoryId || newPart.categoryId || ''}
-                onChange={handleCategoryChange}
-                label="Категория"
-                required
-              >
-                {categories?.map((category: Category) => (
-                  <MenuItem key={category.categoryId} value={category.categoryId}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.categoryId && <FormHelperText>Выберите категорию</FormHelperText>}
-            </FormControl>
-            <FormControl fullWidth margin="dense" error={errors.supplierId}>
-              <InputLabel>Поставщик</InputLabel>
-              <Select
-                name="supplierId"
-                value={selectedPart?.supplierId || newPart.supplierId || ''}
-                onChange={handleSupplierChange}
-                label="Поставщик"
-                required
-              >
-                {suppliers?.map((supplier: Supplier) => (
-                  <MenuItem key={supplier.supplierId} value={supplier.supplierId}>
-                    {supplier.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.supplierId && <FormHelperText>Выберите поставщика</FormHelperText>}
-            </FormControl>
-            <TextField
-              margin="dense"
-              name="unitPrice"
-              label="Цена"
-              fullWidth
-              variant="outlined"
-              value={selectedPart?.unitPrice || (newPart.unitPrice ? newPart.unitPrice.toString() : '')}
-              onChange={handlePriceChange}
-              required
-              error={errors.unitPrice}
-              helperText={errors.unitPrice ? 'Введите корректную цену (больше 0)' : ''}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+              <TextField
+                name="name"
+                label="Название"
+                fullWidth
+                defaultValue={selectedPart?.name}
+              />
+              <TextField
+                name="description"
+                label="Описание"
+                fullWidth
+                multiline
+                rows={3}
+                defaultValue={selectedPart?.description}
+              />
+              <FormControl fullWidth>
+                <InputLabel>Категория</InputLabel>
+                <Select
+                  name="categoryId"
+                  label="Категория"
+                  defaultValue={selectedPart?.categoryId || ''}
+                >
+                  {categories?.map((category: Category) => (
+                    <MenuItem key={category.categoryId} value={category.categoryId}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Поставщик</InputLabel>
+                <Select
+                  name="supplierId"
+                  label="Поставщик"
+                  defaultValue={selectedPart?.supplierId || ''}
+                >
+                  {suppliers?.map((supplier: Supplier) => (
+                    <MenuItem key={supplier.supplierId} value={supplier.supplierId}>
+                      {supplier.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                name="unitPrice"
+                label="Цена"
+                type="number"
+                fullWidth
+                defaultValue={selectedPart?.unitPrice}
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Отмена</Button>
@@ -457,6 +394,38 @@ const PartsPage: React.FC = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      <Dialog
+        open={openDelete}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить запчасть "{selectedPart?.name}"?
+            Это действие необратимо.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>Отмена</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

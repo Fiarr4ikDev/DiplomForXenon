@@ -17,6 +17,8 @@ import {
   TextField,
   IconButton,
   Tooltip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -39,14 +41,20 @@ interface CategoryRequest {
 
 const CategoriesPage: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState<CategoryRequest>({
     name: '',
     description: ''
   });
-  const [errors, setErrors] = useState({
-    name: false,
-    description: false
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'success' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
   });
   const queryClient = useQueryClient();
 
@@ -82,74 +90,73 @@ const CategoriesPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await axios.delete(`${API_URL}/categories/${id}`);
+      try {
+        await axios.delete(`${API_URL}/categories/${id}`);
+      } catch (error: any) {
+        if (error.response?.status === 500 && error.response?.data?.message?.includes('violates foreign key constraint')) {
+          throw new Error('Невозможно удалить категорию, так как существуют связанные запчасти');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setNotification({
+        open: true,
+        message: 'Категория успешно удалена',
+        severity: 'success'
+      });
     },
+    onError: (error: Error) => {
+      setNotification({
+        open: true,
+        message: error.message || 'Произошла ошибка при удалении категории',
+        severity: 'error'
+      });
+    }
   });
 
-  const validateField = (name: string, value: any) => {
-    switch (name) {
-      case 'name':
-        return !value || value.trim() === '' || value.length > 100;
-      case 'description':
-        return value && value.length > 250;
-      default:
-        return false;
+  const validateForm = (data: CategoryRequest): boolean => {
+    if (!data.name || data.name.trim() === '') {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите название категории',
+        severity: 'error'
+      });
+      return false;
     }
+    if (data.name.length > 100) {
+      setNotification({
+        open: true,
+        message: 'Название категории не должно превышать 100 символов',
+        severity: 'error'
+      });
+      return false;
+    }
+    if (data.description && data.description.length > 250) {
+      setNotification({
+        open: true,
+        message: 'Описание не должно превышать 250 символов',
+        severity: 'error'
+      });
+      return false;
+    }
+    return true;
   };
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    setErrors(prev => ({ ...prev, name: validateField('name', value) }));
-    if (selectedCategory) {
-      setSelectedCategory({
-        ...selectedCategory,
-        name: value
-      });
-    } else {
-      setNewCategory({
-        ...newCategory,
-        name: value
-      });
-    }
+    setNewCategory({
+      ...newCategory,
+      name: value
+    });
   };
 
   const handleDescriptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    setErrors(prev => ({ ...prev, description: validateField('description', value) }));
-    if (selectedCategory) {
-      setSelectedCategory({
-        ...selectedCategory,
-        description: value
-      });
-    } else {
-      setNewCategory({
-        ...newCategory,
-        description: value
-      });
-    }
-  };
-
-  const handleClickOpen = () => {
-    setOpen(true);
-    setErrors({
-      name: true,
-      description: false
-    });
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setSelectedCategory(null);
     setNewCategory({
-      name: '',
-      description: ''
-    });
-    setErrors({
-      name: false,
-      description: false
+      ...newCategory,
+      description: value
     });
   };
 
@@ -161,11 +168,59 @@ const CategoriesPage: React.FC = () => {
       description: formData.get('description') as string,
     };
 
+    if (!validateForm(categoryData)) {
+      return;
+    }
+
     if (selectedCategory) {
       updateMutation.mutate({ id: selectedCategory.categoryId, data: categoryData });
+      setNotification({
+        open: true,
+        message: 'Категория успешно обновлена',
+        severity: 'success'
+      });
     } else {
       createMutation.mutate(categoryData);
+      setNotification({
+        open: true,
+        message: 'Категория успешно добавлена',
+        severity: 'success'
+      });
     }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+  };
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedCategory(null);
+    setNewCategory({
+      name: '',
+      description: ''
+    });
+  };
+
+  const handleDeleteClick = (category: Category) => {
+    setSelectedCategory(category);
+    setOpenDelete(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedCategory) {
+      deleteMutation.mutate(selectedCategory.categoryId);
+      setOpenDelete(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setOpenDelete(false);
+    setSelectedCategory(null);
   };
 
   if (isLoading) {
@@ -215,11 +270,7 @@ const CategoriesPage: React.FC = () => {
                   </Tooltip>
                   <Tooltip title="Удалить">
                     <IconButton
-                      onClick={() => {
-                        if (window.confirm('Вы уверены, что хотите удалить эту категорию?')) {
-                          deleteMutation.mutate(category.categoryId);
-                        }
-                      }}
+                      onClick={() => handleDeleteClick(category)}
                       color="error"
                     >
                       <DeleteIcon />
@@ -232,40 +283,30 @@ const CategoriesPage: React.FC = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>
-          {selectedCategory ? 'Редактировать категорию' : 'Добавить категорию'}
-        </DialogTitle>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit}>
+          <DialogTitle>
+            {selectedCategory ? 'Редактировать категорию' : 'Добавить категорию'}
+          </DialogTitle>
           <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              name="name"
-              label="Название"
-              fullWidth
-              variant="outlined"
-              value={selectedCategory?.name || newCategory.name}
-              onChange={handleNameChange}
-              required
-              error={errors.name}
-              helperText={errors.name ? 
-                ((selectedCategory?.name && selectedCategory.name.length > 100) || newCategory.name.length > 100 ? 
-                  'Название не должно превышать 100 символов' : 
-                  'Название не может быть пустым') : 
-                ''}
-            />
-            <TextField
-              margin="dense"
-              name="description"
-              label="Описание"
-              fullWidth
-              variant="outlined"
-              value={selectedCategory?.description || newCategory.description}
-              onChange={handleDescriptionChange}
-              error={errors.description}
-              helperText={errors.description ? 'Описание не должно превышать 250 символов' : ''}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+              <TextField
+                name="name"
+                label="Название"
+                fullWidth
+                defaultValue={selectedCategory?.name}
+                inputProps={{ maxLength: 100 }}
+              />
+              <TextField
+                name="description"
+                label="Описание"
+                fullWidth
+                multiline
+                rows={3}
+                defaultValue={selectedCategory?.description}
+                inputProps={{ maxLength: 250 }}
+              />
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Отмена</Button>
@@ -275,6 +316,38 @@ const CategoriesPage: React.FC = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      <Dialog
+        open={openDelete}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить категорию "{selectedCategory?.name}"?
+            Это действие необратимо.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>Отмена</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

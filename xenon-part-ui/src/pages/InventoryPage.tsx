@@ -22,7 +22,8 @@ import {
   FormControl,
   InputLabel,
   SelectChangeEvent,
-  FormHelperText,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { Add as AddIcon, Remove as RemoveIcon, AddCircle as AddCircleIcon, RemoveCircle as RemoveCircleIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -67,14 +68,19 @@ const InventoryPage: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [openAddQuantity, setOpenAddQuantity] = useState(false);
   const [openRemoveQuantity, setOpenRemoveQuantity] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [newInventory, setNewInventory] = useState<InventoryRequest>({ partId: 0, quantityInStock: 0 });
   const [quantityToChange, setQuantityToChange] = useState<string>('');
-  const [errors, setErrors] = useState({
-    partId: false,
-    quantityInStock: false,
-    quantityToChange: false
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'success' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
   });
   const queryClient = useQueryClient();
 
@@ -116,120 +122,141 @@ const InventoryPage: React.FC = () => {
       setOpenRemoveQuantity(false);
       setSelectedInventory(null);
       setQuantityToChange('');
-      setErrors({
-        partId: false,
-        quantityInStock: false,
-        quantityToChange: false
-      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await axios.delete(`${API_URL}/inventory/${id}`);
+      try {
+        await axios.delete(`${API_URL}/inventory/${id}`);
+      } catch (error: any) {
+        throw new Error('Произошла ошибка при удалении записи инвентаря');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      setNotification({
+        open: true,
+        message: 'Запись инвентаря успешно удалена',
+        severity: 'success'
+      });
     },
+    onError: (error: Error) => {
+      setNotification({
+        open: true,
+        message: error.message || 'Произошла ошибка при удалении записи инвентаря',
+        severity: 'error'
+      });
+    }
   });
 
-  const validateField = (name: string, value: any) => {
-    switch (name) {
-      case 'partId':
-        return !value || value === 0;
-      case 'quantityInStock':
-        return !value || value < 0;
-      default:
-        return false;
-    }
-  };
-
-  const handlePartChange = (event: SelectChangeEvent<number>) => {
-    const partId = event.target.value as number;
-    setErrors(prev => ({ ...prev, partId: validateField('partId', partId) }));
-    if (selectedInventory) {
-      setSelectedInventory({
-        ...selectedInventory,
-        partId: partId
+  const validateForm = (data: InventoryRequest): boolean => {
+    if (!data.partId || data.partId === 0) {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, выберите запчасть',
+        severity: 'error'
       });
-    } else {
-      setNewInventory({
-        ...newInventory,
-        partId: partId
+      return false;
+    }
+    if (!data.quantityInStock || Number(data.quantityInStock) < 0) {
+      setNotification({
+        open: true,
+        message: 'Количество не может быть отрицательным',
+        severity: 'error'
       });
+      return false;
     }
-  };
-
-  const handleQuantityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setErrors(prev => ({ ...prev, quantityInStock: validateField('quantityInStock', value) }));
-    if (value === '' || /^\d*$/.test(value)) {
-      if (selectedInventory) {
-        setSelectedInventory({
-          ...selectedInventory,
-          quantityInStock: value === '' ? 0 : Number(value),
-          lastRestockDate: new Date().toISOString()
-        });
-      } else {
-        setNewInventory({
-          ...newInventory,
-          quantityInStock: value === '' ? '' : Number(value)
-        });
-      }
-    }
-  };
-
-  const handleAddQuantity = (inventory: Inventory) => {
-    setSelectedInventory(inventory);
-    setQuantityToChange('');
-    setOpenAddQuantity(true);
-  };
-
-  const handleRemoveQuantity = (inventory: Inventory) => {
-    setSelectedInventory(inventory);
-    setQuantityToChange('');
-    setOpenRemoveQuantity(true);
+    return true;
   };
 
   const handleQuantityChangeSubmit = async () => {
-    if (!selectedInventory || !quantityToChange) return;
+    if (!selectedInventory || !quantityToChange) {
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите количество',
+        severity: 'error'
+      });
+      return;
+    }
 
     const quantity = parseInt(quantityToChange);
     if (isNaN(quantity) || quantity <= 0) {
-        setErrors(prev => ({ ...prev, quantityToChange: true }));
-        return;
+      setNotification({
+        open: true,
+        message: 'Пожалуйста, введите корректное количество',
+        severity: 'error'
+      });
+      return;
     }
 
     try {
-        if (openAddQuantity) {
-            await addInventoryQuantity(selectedInventory.inventoryId, quantity);
-        } else if (openRemoveQuantity) {
-            await removeInventoryQuantity(selectedInventory.inventoryId, quantity);
-        }
-        
-        // Обновляем данные после успешного изменения
-        queryClient.invalidateQueries({ queryKey: ['inventory'] });
-        
-        // Закрываем модальное окно и сбрасываем состояние
-        setOpenAddQuantity(false);
-        setOpenRemoveQuantity(false);
-        setQuantityToChange('');
-        setSelectedInventory(null);
-        setErrors(prev => ({ ...prev, quantityToChange: false }));
+      if (openAddQuantity) {
+        await addInventoryQuantity(selectedInventory.inventoryId, quantity);
+        setNotification({
+          open: true,
+          message: 'Количество успешно добавлено',
+          severity: 'success'
+        });
+      } else if (openRemoveQuantity) {
+        await removeInventoryQuantity(selectedInventory.inventoryId, quantity);
+        setNotification({
+          open: true,
+          message: 'Количество успешно уменьшено',
+          severity: 'success'
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      setOpenAddQuantity(false);
+      setOpenRemoveQuantity(false);
+      setQuantityToChange('');
+      setSelectedInventory(null);
     } catch (error) {
-        console.error('Ошибка при изменении количества:', error);
-        // Показываем ошибку пользователю
-        setErrors(prev => ({ ...prev, quantityToChange: true }));
+      console.error('Ошибка при изменении количества:', error);
+      setNotification({
+        open: true,
+        message: 'Произошла ошибка при изменении количества',
+        severity: 'error'
+      });
     }
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const inventoryData: InventoryRequest = {
+      partId: Number(formData.get('partId')),
+      quantityInStock: Number(formData.get('quantityInStock'))
+    };
+
+    if (!validateForm(inventoryData)) {
+      return;
+    }
+
+    if (selectedInventory) {
+      updateMutation.mutate({ id: selectedInventory.inventoryId, data: inventoryData });
+      setNotification({
+        open: true,
+        message: 'Запись успешно обновлена',
+        severity: 'success'
+      });
+    } else {
+      createMutation.mutate(inventoryData);
+      setNotification({
+        open: true,
+        message: 'Запись успешно добавлена',
+        severity: 'success'
+      });
+    }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
   };
 
   const handleClickOpen = () => {
     setOpen(true);
-    setErrors({
-      partId: true,
-      quantityInStock: true,
-      quantityToChange: false
-    });
   };
 
   const handleClose = () => {
@@ -239,26 +266,23 @@ const InventoryPage: React.FC = () => {
       partId: 0,
       quantityInStock: 0
     });
-    setErrors({
-      partId: false,
-      quantityInStock: false,
-      quantityToChange: false
-    });
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const inventoryData: InventoryRequest = {
-      partId: Number(formData.get('partId')),
-      quantityInStock: Number(formData.get('quantityInStock')),
-    };
+  const handleDeleteClick = (inventory: Inventory) => {
+    setSelectedInventory(inventory);
+    setOpenDelete(true);
+  };
 
+  const handleDeleteConfirm = () => {
     if (selectedInventory) {
-      updateMutation.mutate({ id: selectedInventory.inventoryId, data: inventoryData });
-    } else {
-      createMutation.mutate(inventoryData);
+      deleteMutation.mutate(selectedInventory.inventoryId);
+      setOpenDelete(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setOpenDelete(false);
+    setSelectedInventory(null);
   };
 
   if (isInventoryLoading || isPartsLoading) {
@@ -306,7 +330,11 @@ const InventoryPage: React.FC = () => {
                 <TableCell>
                   <Tooltip title="Добавить количество">
                     <IconButton
-                      onClick={() => handleAddQuantity(item)}
+                      onClick={() => {
+                        setSelectedInventory(item);
+                        setQuantityToChange('');
+                        setOpenAddQuantity(true);
+                      }}
                       color="primary"
                     >
                       <AddCircleIcon />
@@ -314,7 +342,11 @@ const InventoryPage: React.FC = () => {
                   </Tooltip>
                   <Tooltip title="Вычесть количество">
                     <IconButton
-                      onClick={() => handleRemoveQuantity(item)}
+                      onClick={() => {
+                        setSelectedInventory(item);
+                        setQuantityToChange('');
+                        setOpenRemoveQuantity(true);
+                      }}
                       color="error"
                     >
                       <RemoveCircleIcon />
@@ -335,11 +367,7 @@ const InventoryPage: React.FC = () => {
                   </Tooltip>
                   <Tooltip title="Удалить">
                     <IconButton
-                      onClick={() => {
-                        if (window.confirm('Вы уверены, что хотите удалить эту запись инвентаря?')) {
-                          deleteMutation.mutate(item.inventoryId);
-                        }
-                      }}
+                      onClick={() => handleDeleteClick(item)}
                       color="error"
                     >
                       <DeleteIcon />
@@ -353,55 +381,35 @@ const InventoryPage: React.FC = () => {
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {selectedInventory ? 'Редактировать запись' : 'Добавить запись'}
-        </DialogTitle>
         <form onSubmit={handleSubmit}>
+          <DialogTitle>
+            {selectedInventory ? 'Редактировать запись' : 'Добавить запись'}
+          </DialogTitle>
           <DialogContent>
-            <FormControl fullWidth margin="dense" error={errors.partId}>
-              <InputLabel>Запчасть</InputLabel>
-              <Select
-                name="partId"
-                value={selectedInventory?.partId || newInventory.partId || ''}
-                onChange={handlePartChange}
-                label="Запчасть"
-                required
-              >
-                {parts?.map((part: Part) => (
-                  <MenuItem key={part.partId} value={part.partId}>
-                    {part.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.partId && <FormHelperText>Выберите запчасть</FormHelperText>}
-            </FormControl>
-
-            {selectedPart && (
-              <Box sx={{ mt: 2, mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Категория: {selectedPart.categoryName}
-                </Typography>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Поставщик: {selectedPart.supplierName}
-                </Typography>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Цена: {selectedPart.unitPrice} ₽
-                </Typography>
-              </Box>
-            )}
-
-            <TextField
-              margin="dense"
-              name="quantityInStock"
-              label="Количество"
-              fullWidth
-              variant="outlined"
-              value={selectedInventory?.quantityInStock || newInventory.quantityInStock || ''}
-              onChange={handleQuantityChange}
-              required
-              error={errors.quantityInStock}
-              helperText={errors.quantityInStock ? 'Введите корректное количество (неотрицательное число)' : ''}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Запчасть</InputLabel>
+                <Select
+                  name="partId"
+                  label="Запчасть"
+                  defaultValue={selectedInventory?.partId || ''}
+                >
+                  {parts?.map((part: Part) => (
+                    <MenuItem key={part.partId} value={part.partId}>
+                      {part.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                name="quantityInStock"
+                label="Количество"
+                type="number"
+                fullWidth
+                defaultValue={selectedInventory?.quantityInStock}
+                inputProps={{ min: 0 }}
+              />
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Отмена</Button>
@@ -412,65 +420,71 @@ const InventoryPage: React.FC = () => {
         </form>
       </Dialog>
 
-      <Dialog open={openAddQuantity} onClose={() => setOpenAddQuantity(false)}>
-        <DialogTitle>Добавить количество</DialogTitle>
+      <Dialog open={openAddQuantity || openRemoveQuantity} onClose={() => {
+        setOpenAddQuantity(false);
+        setOpenRemoveQuantity(false);
+        setQuantityToChange('');
+      }}>
+        <DialogTitle>
+          {openAddQuantity ? 'Добавить количество' : 'Уменьшить количество'}
+        </DialogTitle>
         <DialogContent>
           <TextField
+            autoFocus
             margin="dense"
-            name="quantity"
-            label="Количество для добавления"
+            label="Количество"
+            type="number"
             fullWidth
-            variant="outlined"
             value={quantityToChange}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || /^\d*$/.test(value)) {
-                setQuantityToChange(value);
-                setErrors(prev => ({ ...prev, quantityToChange: !value || !/^\d+$/.test(value) }));
-              }
-            }}
-            required
-            error={errors.quantityToChange}
-            helperText={errors.quantityToChange ? 'Введите корректное количество' : ''}
+            onChange={(e) => setQuantityToChange(e.target.value)}
+            inputProps={{ min: 1 }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenAddQuantity(false)}>Отмена</Button>
-          <Button onClick={handleQuantityChangeSubmit} variant="contained" color="primary">
-            Добавить
+          <Button onClick={() => {
+            setOpenAddQuantity(false);
+            setOpenRemoveQuantity(false);
+            setQuantityToChange('');
+          }}>
+            Отмена
+          </Button>
+          <Button onClick={handleQuantityChangeSubmit} variant="contained">
+            Подтвердить
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openRemoveQuantity} onClose={() => setOpenRemoveQuantity(false)}>
-        <DialogTitle>Вычесть количество</DialogTitle>
+      <Dialog
+        open={openDelete}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Подтверждение удаления</DialogTitle>
         <DialogContent>
-          <TextField
-            margin="dense"
-            name="quantity"
-            label="Количество для вычитания"
-            fullWidth
-            variant="outlined"
-            value={quantityToChange}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || /^\d*$/.test(value)) {
-                setQuantityToChange(value);
-                setErrors(prev => ({ ...prev, quantityToChange: !value || !/^\d+$/.test(value) }));
-              }
-            }}
-            required
-            error={errors.quantityToChange}
-            helperText={errors.quantityToChange ? 'Введите корректное количество' : ''}
-          />
+          <Typography>
+            Вы уверены, что хотите удалить запись инвентаря для запчасти "{selectedInventory ? getPartName(selectedInventory.partId) : ''}"?
+            Это действие необратимо.
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenRemoveQuantity(false)}>Отмена</Button>
-          <Button onClick={handleQuantityChangeSubmit} variant="contained" color="error">
-            Вычесть
+          <Button onClick={handleDeleteCancel}>Отмена</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Удалить
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
