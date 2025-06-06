@@ -20,12 +20,13 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { Add as AddIcon, FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon } from '@mui/icons-material';
+import { Add as AddIcon, FileDownload as FileDownloadIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingState } from '../components/LoadingState';
+import { ImportDialog } from '../components/ImportDialog';
 import * as XLSX from 'xlsx';
 
 const API_URL = 'http://localhost:8080/api';
@@ -49,6 +50,7 @@ interface SupplierRequest {
 
 const SuppliersPage: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const queryClient = useQueryClient();
@@ -61,6 +63,7 @@ const SuppliersPage: React.FC = () => {
     message: '',
     severity: 'info'
   });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   const { data: suppliers, isLoading, error, refetch } = useQuery({
     queryKey: ['suppliers'],
@@ -119,6 +122,72 @@ const SuppliersPage: React.FC = () => {
       });
     }
   });
+
+  const handleImport = async (data: any[]) => {
+    try {
+      for (const item of data) {
+        await createMutation.mutateAsync({
+          name: item['Название'],
+          contactPerson: item['Контактное лицо'],
+          phone: item['Телефон'],
+          email: item['Email'],
+          address: item['Адрес']
+        });
+      }
+      setSnackbar({
+        open: true,
+        message: 'Данные успешно импортированы',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Ошибка при импорте данных',
+        severity: 'error'
+      });
+    }
+  };
+
+  const validateImportData = (data: any[]) => {
+    const errors: string[] = [];
+    
+    if (data.length === 0) {
+      errors.push('Файл не содержит данных');
+      return { isValid: false, errors };
+    }
+
+    data.forEach((row, index) => {
+      if (!row['Название']) {
+        errors.push(`Строка ${index + 1}: Отсутствует название`);
+      }
+      if (row['Название'] && row['Название'].length > 100) {
+        errors.push(`Строка ${index + 1}: Название слишком длинное (максимум 100 символов)`);
+      }
+      if (!row['Контактное лицо']) {
+        errors.push(`Строка ${index + 1}: Отсутствует контактное лицо`);
+      }
+      if (row['Контактное лицо'] && row['Контактное лицо'].length > 100) {
+        errors.push(`Строка ${index + 1}: Имя контактного лица слишком длинное (максимум 100 символов)`);
+      }
+      if (!row['Телефон']) {
+        errors.push(`Строка ${index + 1}: Отсутствует телефон`);
+      }
+      if (!row['Email']) {
+        errors.push(`Строка ${index + 1}: Отсутствует email`);
+      }
+      if (row['Email'] && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row['Email'])) {
+        errors.push(`Строка ${index + 1}: Неверный формат email`);
+      }
+      if (row['Адрес'] && row['Адрес'].length > 200) {
+        errors.push(`Строка ${index + 1}: Адрес слишком длинный (максимум 200 символов)`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
 
   const validateForm = (data: SupplierRequest): boolean => {
     if (!data.name || data.name.trim() === '') {
@@ -307,9 +376,10 @@ const SuppliersPage: React.FC = () => {
               <Button
                 variant="outlined"
                 color="primary"
-                startIcon={<FilterListIcon />}
+                startIcon={<UploadIcon />}
+                onClick={() => setImportOpen(true)}
               >
-                Фильтры
+                Импорт
               </Button>
               <Button
                 variant="outlined"
@@ -448,6 +518,15 @@ const SuppliersPage: React.FC = () => {
         </>
       )}
 
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+        templateHeaders={['Название', 'Контактное лицо', 'Телефон', 'Email', 'Адрес']}
+        validateData={validateImportData}
+        title="Импорт поставщиков"
+      />
+
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
@@ -459,6 +538,20 @@ const SuppliersPage: React.FC = () => {
           sx={{ width: '100%' }}
         >
           {notification.message}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

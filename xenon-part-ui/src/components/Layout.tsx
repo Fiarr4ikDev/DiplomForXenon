@@ -52,12 +52,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const drawer = (
     <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Меню
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        p: 2,
+        borderBottom: '1px solid',
+        borderColor: 'divider'
+      }}>
+        <Typography variant="h6" sx={{ 
+          fontWeight: 'bold',
+          color: 'primary.main',
+          fontSize: '1.5rem'
+        }}>
+          Ксенон+
         </Typography>
-      </Toolbar>
-      <List>
+      </Box>
+      <List sx={{ overflowX: 'hidden' }}>
         {menuItems.map((item) => (
           <ListItem
             key={item.text}
@@ -67,7 +78,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             sx={{
               '&:hover': {
                 backgroundColor: 'action.hover',
-              },
+              }
             }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
@@ -118,6 +129,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               boxSizing: 'border-box',
               width: drawerWidth,
               backgroundColor: theme.palette.background.paper,
+              overflowX: 'hidden'
             },
           }}
         >

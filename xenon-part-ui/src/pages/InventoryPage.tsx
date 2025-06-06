@@ -25,7 +25,7 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { Add as AddIcon, Remove as RemoveIcon, AddCircle as AddCircleIcon, RemoveCircle as RemoveCircleIcon, FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon } from '@mui/icons-material';
+import { Add as AddIcon, Remove as RemoveIcon, AddCircle as AddCircleIcon, RemoveCircle as RemoveCircleIcon, FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
@@ -40,6 +40,7 @@ import {
     removeInventoryQuantity
 } from '../api/inventory';
 import * as XLSX from 'xlsx';
+import { ImportDialog } from '../components/ImportDialog';
 
 interface Inventory {
   inventoryId: number;
@@ -84,6 +85,8 @@ const InventoryPage: React.FC = () => {
     message: '',
     severity: 'info'
   });
+  const [importOpen, setImportOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const queryClient = useQueryClient();
 
   const { data: inventory, isLoading: isInventoryLoading, error: inventoryError, refetch: refetchInventory } = useQuery<Inventory[]>({
@@ -368,6 +371,67 @@ const InventoryPage: React.FC = () => {
     XLSX.writeFile(wb, 'inventory.xlsx');
   };
 
+  const handleImport = async (data: any[]) => {
+    try {
+      for (const item of data) {
+        await createMutation.mutateAsync({
+          partId: parseInt(item['ID запчасти']),
+          quantityInStock: parseInt(item['Количество']),
+          lastRestockDate: new Date(item['Дата последнего пополнения']).toISOString()
+        });
+      }
+      setSnackbar({
+        open: true,
+        message: 'Данные успешно импортированы',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Ошибка при импорте данных',
+        severity: 'error'
+      });
+    }
+  };
+
+  const validateImportData = (data: any[]) => {
+    const errors: string[] = [];
+    
+    if (data.length === 0) {
+      errors.push('Файл не содержит данных');
+      return { isValid: false, errors };
+    }
+
+    data.forEach((row, index) => {
+      if (!row['ID запчасти']) {
+        errors.push(`Строка ${index + 1}: Отсутствует ID запчасти`);
+      }
+      if (row['ID запчасти'] && isNaN(parseInt(row['ID запчасти']))) {
+        errors.push(`Строка ${index + 1}: ID запчасти должен быть числом`);
+      }
+      if (!row['Количество']) {
+        errors.push(`Строка ${index + 1}: Отсутствует количество`);
+      }
+      if (row['Количество'] && isNaN(parseInt(row['Количество']))) {
+        errors.push(`Строка ${index + 1}: Количество должно быть числом`);
+      }
+      if (row['Количество'] && parseInt(row['Количество']) < 0) {
+        errors.push(`Строка ${index + 1}: Количество не может быть отрицательным`);
+      }
+      if (!row['Дата последнего пополнения']) {
+        errors.push(`Строка ${index + 1}: Отсутствует дата последнего пополнения`);
+      }
+      if (row['Дата последнего пополнения'] && isNaN(Date.parse(row['Дата последнего пополнения']))) {
+        errors.push(`Строка ${index + 1}: Неверный формат даты`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   if (isLoading) {
     return <LoadingState 
       isLoading={isLoading}
@@ -404,9 +468,10 @@ const InventoryPage: React.FC = () => {
               <Button
                 variant="outlined"
                 color="primary"
-                startIcon={<FilterListIcon />}
+                startIcon={<UploadIcon />}
+                onClick={() => setImportOpen(true)}
               >
-                Фильтры
+                Импорт
               </Button>
               <Button
                 variant="outlined"
@@ -591,6 +656,15 @@ const InventoryPage: React.FC = () => {
         </>
       )}
 
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+        templateHeaders={['ID запчасти', 'Количество', 'Дата последнего пополнения']}
+        validateData={validateImportData}
+        title="Импорт инвентаря"
+      />
+
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
@@ -602,6 +676,20 @@ const InventoryPage: React.FC = () => {
           sx={{ width: '100%' }}
         >
           {notification.message}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

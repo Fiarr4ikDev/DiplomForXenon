@@ -31,8 +31,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { SelectChangeEvent } from '@mui/material';
 import { Typography } from '@mui/material';
 import { LoadingState } from '../components/LoadingState';
-import { FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon } from '@mui/icons-material';
+import { FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon, Upload as UploadIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
+import { ImportDialog } from '../components/ImportDialog';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -85,6 +86,8 @@ const PartsPage: React.FC = () => {
     message: '',
     severity: 'info'
   });
+  const [importOpen, setImportOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const queryClient = useQueryClient();
 
   const { data: parts, isLoading: partsLoading, error: partsError, refetch: refetchParts } = useQuery({
@@ -354,6 +357,75 @@ const PartsPage: React.FC = () => {
     XLSX.writeFile(wb, 'parts.xlsx');
   };
 
+  const handleImport = async (data: any[]) => {
+    try {
+      for (const item of data) {
+        await createMutation.mutateAsync({
+          name: item['Название'],
+          description: item['Описание'],
+          categoryId: parseInt(item['ID категории']),
+          supplierId: parseInt(item['ID поставщика']),
+          unitPrice: item['Цена']
+        });
+      }
+      setSnackbar({
+        open: true,
+        message: 'Данные успешно импортированы',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Ошибка при импорте данных',
+        severity: 'error'
+      });
+    }
+  };
+
+  const validateImportData = (data: any[]) => {
+    const errors: string[] = [];
+    
+    if (data.length === 0) {
+      errors.push('Файл не содержит данных');
+      return { isValid: false, errors };
+    }
+
+    data.forEach((row, index) => {
+      if (!row['Название']) {
+        errors.push(`Строка ${index + 1}: Отсутствует название`);
+      }
+      if (row['Название'] && row['Название'].length > 100) {
+        errors.push(`Строка ${index + 1}: Название слишком длинное (максимум 100 символов)`);
+      }
+      if (row['Описание'] && row['Описание'].length > 500) {
+        errors.push(`Строка ${index + 1}: Описание слишком длинное (максимум 500 символов)`);
+      }
+      if (!row['ID категории']) {
+        errors.push(`Строка ${index + 1}: Отсутствует ID категории`);
+      }
+      if (row['ID категории'] && isNaN(parseInt(row['ID категории']))) {
+        errors.push(`Строка ${index + 1}: ID категории должен быть числом`);
+      }
+      if (!row['ID поставщика']) {
+        errors.push(`Строка ${index + 1}: Отсутствует ID поставщика`);
+      }
+      if (row['ID поставщика'] && isNaN(parseInt(row['ID поставщика']))) {
+        errors.push(`Строка ${index + 1}: ID поставщика должен быть числом`);
+      }
+      if (!row['Цена']) {
+        errors.push(`Строка ${index + 1}: Отсутствует цена`);
+      }
+      if (row['Цена'] && isNaN(parseFloat(row['Цена']))) {
+        errors.push(`Строка ${index + 1}: Цена должна быть числом`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -374,9 +446,10 @@ const PartsPage: React.FC = () => {
               <Button
                 variant="outlined"
                 color="primary"
-                startIcon={<FilterListIcon />}
+                startIcon={<UploadIcon />}
+                onClick={() => setImportOpen(true)}
               >
-                Фильтры
+                Импорт
               </Button>
               <Button
                 variant="outlined"
@@ -545,6 +618,15 @@ const PartsPage: React.FC = () => {
         </>
       )}
 
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+        templateHeaders={['Название', 'Описание', 'ID категории', 'ID поставщика', 'Цена']}
+        validateData={validateImportData}
+        title="Импорт запчастей"
+      />
+
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
@@ -556,6 +638,20 @@ const PartsPage: React.FC = () => {
           sx={{ width: '100%' }}
         >
           {notification.message}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

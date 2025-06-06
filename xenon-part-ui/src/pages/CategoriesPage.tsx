@@ -20,12 +20,13 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { Add as AddIcon, FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon } from '@mui/icons-material';
+import { Add as AddIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingState } from '../components/LoadingState';
+import { ImportDialog } from '../components/ImportDialog';
 import * as XLSX from 'xlsx';
 
 const API_URL = 'http://localhost:8080/api';
@@ -43,21 +44,14 @@ interface CategoryRequest {
 
 const CategoriesPage: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState<CategoryRequest>({
     name: '',
     description: ''
   });
-  const [notification, setNotification] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'error' | 'success' | 'info' | 'warning';
-  }>({
-    open: false,
-    message: '',
-    severity: 'info'
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const queryClient = useQueryClient();
 
   const { data: categories, isLoading, error, refetch } = useQuery({
@@ -103,14 +97,14 @@ const CategoriesPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setNotification({
+      setSnackbar({
         open: true,
         message: 'Категория успешно удалена',
         severity: 'success'
       });
     },
     onError: (error: Error) => {
-      setNotification({
+      setSnackbar({
         open: true,
         message: error.message || 'Произошла ошибка при удалении категории',
         severity: 'error'
@@ -118,9 +112,57 @@ const CategoriesPage: React.FC = () => {
     }
   });
 
+  const handleImport = async (data: any[]) => {
+    try {
+      for (const item of data) {
+        await createMutation.mutateAsync({
+          name: item['Название'],
+          description: item['Описание']
+        });
+      }
+      setSnackbar({
+        open: true,
+        message: 'Данные успешно импортированы',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Ошибка при импорте данных',
+        severity: 'error'
+      });
+    }
+  };
+
+  const validateImportData = (data: any[]) => {
+    const errors: string[] = [];
+    
+    if (data.length === 0) {
+      errors.push('Файл не содержит данных');
+      return { isValid: false, errors };
+    }
+
+    data.forEach((row, index) => {
+      if (!row['Название']) {
+        errors.push(`Строка ${index + 1}: Отсутствует название`);
+      }
+      if (row['Название'] && row['Название'].length > 100) {
+        errors.push(`Строка ${index + 1}: Название слишком длинное (максимум 100 символов)`);
+      }
+      if (row['Описание'] && row['Описание'].length > 500) {
+        errors.push(`Строка ${index + 1}: Описание слишком длинное (максимум 500 символов)`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   const validateForm = (data: CategoryRequest): boolean => {
     if (!data.name || data.name.trim() === '') {
-      setNotification({
+      setSnackbar({
         open: true,
         message: 'Пожалуйста, введите название категории',
         severity: 'error'
@@ -128,7 +170,7 @@ const CategoriesPage: React.FC = () => {
       return false;
     }
     if (data.name.length > 100) {
-      setNotification({
+      setSnackbar({
         open: true,
         message: 'Название категории не должно превышать 100 символов',
         severity: 'error'
@@ -136,7 +178,7 @@ const CategoriesPage: React.FC = () => {
       return false;
     }
     if (data.description && data.description.length > 250) {
-      setNotification({
+      setSnackbar({
         open: true,
         message: 'Описание не должно превышать 250 символов',
         severity: 'error'
@@ -176,14 +218,14 @@ const CategoriesPage: React.FC = () => {
 
     if (selectedCategory) {
       updateMutation.mutate({ id: selectedCategory.categoryId, data: categoryData });
-      setNotification({
+      setSnackbar({
         open: true,
         message: 'Категория успешно обновлена',
         severity: 'success'
       });
     } else {
       createMutation.mutate(categoryData);
-      setNotification({
+      setSnackbar({
         open: true,
         message: 'Категория успешно добавлена',
         severity: 'success'
@@ -192,7 +234,7 @@ const CategoriesPage: React.FC = () => {
   };
 
   const handleCloseNotification = () => {
-    setNotification(prev => ({ ...prev, open: false }));
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   const handleClickOpen = () => {
@@ -316,9 +358,10 @@ const CategoriesPage: React.FC = () => {
               <Button
                 variant="outlined"
                 color="primary"
-                startIcon={<FilterListIcon />}
+                startIcon={<UploadIcon />}
+                onClick={() => setImportOpen(true)}
               >
-                Фильтры
+                Импорт
               </Button>
               <Button
                 variant="outlined"
@@ -444,17 +487,26 @@ const CategoriesPage: React.FC = () => {
         </>
       )}
 
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+        templateHeaders={['Название', 'Описание']}
+        validateData={validateImportData}
+        title="Импорт категорий"
+      />
+
       <Snackbar
-        open={notification.open}
+        open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
       >
         <Alert
           onClose={handleCloseNotification}
-          severity={notification.severity}
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          {notification.message}
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>
