@@ -44,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { settings } = useSettings();
-  const { isAuthenticated, username, logout } = useAuth();
+  const { isAuthenticated, username, avatarUrl, logout } = useAuth();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -128,12 +128,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             }}
           >
             <ListItemIcon>
-              <Avatar sx={{
-                bgcolor: 'primary.main',
-                width: 24,
-                height: 24,
-              }}>
-                <PersonIcon fontSize="small" />
+              <Avatar
+                sx={{
+                  bgcolor: 'primary.main',
+                  width: 24,
+                  height: 24,
+                }}
+                src={avatarUrl || undefined}
+              >
+                {!avatarUrl && <PersonIcon fontSize="small" />}
               </Avatar>
             </ListItemIcon>
             <ListItemText primary={username || 'Пользователь'} />
@@ -158,7 +161,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ListItemIcon>
                 <PersonIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>Поменять информацию</ListItemText>
+              <ListItemText>Профиль</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => {
               handleMenuClose();
