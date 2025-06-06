@@ -30,6 +30,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { LoadingState } from '../components/LoadingState';
 import { 
     getInventory, 
     createInventory, 
@@ -84,7 +85,7 @@ const InventoryPage: React.FC = () => {
   });
   const queryClient = useQueryClient();
 
-  const { data: inventory, isLoading: isInventoryLoading } = useQuery<Inventory[]>({
+  const { data: inventory, isLoading: isInventoryLoading, error: inventoryError, refetch: refetchInventory } = useQuery<Inventory[]>({
     queryKey: ['inventory'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/inventory`);
@@ -92,13 +93,21 @@ const InventoryPage: React.FC = () => {
     },
   });
 
-  const { data: parts, isLoading: isPartsLoading } = useQuery<Part[]>({
+  const { data: parts, isLoading: isPartsLoading, error: partsError, refetch: refetchParts } = useQuery<Part[]>({
     queryKey: ['parts'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/parts`);
       return response.data;
     },
   });
+
+  const isLoading = isInventoryLoading || isPartsLoading;
+  const error = inventoryError || partsError;
+
+  const handleRetry = () => {
+    refetchInventory();
+    refetchParts();
+  };
 
   const createMutation = useMutation({
     mutationFn: async (inventoryData: InventoryRequest) => {
@@ -285,8 +294,13 @@ const InventoryPage: React.FC = () => {
     setSelectedInventory(null);
   };
 
-  if (isInventoryLoading || isPartsLoading) {
-    return <Typography>Загрузка...</Typography>;
+  if (isLoading) {
+    return <LoadingState 
+      isLoading={isLoading}
+      error={error ? 'Не удалось загрузить данные. Пожалуйста, проверьте подключение к серверу.' : null}
+      onRetry={handleRetry}
+      loadingText="Загрузка данных инвентаря и списка запчастей..."
+    />;
   }
 
   const getPartName = (partId: number) => {
@@ -298,190 +312,194 @@ const InventoryPage: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">Инвентарь</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Инвентарь</Typography>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
-          onClick={() => handleClickOpen()}
+          onClick={handleClickOpen}
         >
           Добавить запись
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Запчасть</TableCell>
-              <TableCell>Количество</TableCell>
-              <TableCell>Последнее обновление</TableCell>
-              <TableCell>Действия</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {inventory?.map((item: Inventory) => (
-              <TableRow key={item.inventoryId}>
-                <TableCell>{item.inventoryId}</TableCell>
-                <TableCell>{getPartName(item.partId)}</TableCell>
-                <TableCell>{item.quantityInStock}</TableCell>
-                <TableCell>{new Date(item.lastRestockDate).toLocaleString()}</TableCell>
-                <TableCell>
-                  <Tooltip title="Добавить количество">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedInventory(item);
-                        setQuantityToChange('');
-                        setOpenAddQuantity(true);
-                      }}
-                      color="primary"
-                    >
-                      <AddCircleIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Вычесть количество">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedInventory(item);
-                        setQuantityToChange('');
-                        setOpenRemoveQuantity(true);
-                      }}
-                      color="error"
-                    >
-                      <RemoveCircleIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Редактировать">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedInventory(item);
-                        const part = parts?.find((p: Part) => p.partId === item.partId);
-                        setSelectedPart(part || null);
-                        setOpen(true);
-                      }}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Удалить">
-                    <IconButton
-                      onClick={() => handleDeleteClick(item)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {!isLoading && !error && (
+        <>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Запчасть</TableCell>
+                  <TableCell>Количество</TableCell>
+                  <TableCell>Дата последнего пополнения</TableCell>
+                  <TableCell>Действия</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {inventory?.map((item: Inventory) => (
+                  <TableRow key={item.inventoryId}>
+                    <TableCell>{item.inventoryId}</TableCell>
+                    <TableCell>{getPartName(item.partId)}</TableCell>
+                    <TableCell>{item.quantityInStock}</TableCell>
+                    <TableCell>{new Date(item.lastRestockDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Tooltip title="Добавить количество">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedInventory(item);
+                            setOpenAddQuantity(true);
+                          }}
+                        >
+                          <AddCircleIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Уменьшить количество">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedInventory(item);
+                            setOpenRemoveQuantity(true);
+                          }}
+                        >
+                          <RemoveCircleIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Редактировать">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedInventory(item);
+                            setNewInventory({
+                              partId: item.partId,
+                              quantityInStock: item.quantityInStock
+                            });
+                            setOpen(true);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Удалить">
+                        <IconButton
+                          onClick={() => handleDeleteClick(item)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <form onSubmit={handleSubmit}>
-          <DialogTitle>
-            {selectedInventory ? 'Редактировать запись' : 'Добавить запись'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Запчасть</InputLabel>
-                <Select
-                  name="partId"
-                  label="Запчасть"
-                  defaultValue={selectedInventory?.partId || ''}
-                >
-                  {parts?.map((part: Part) => (
-                    <MenuItem key={part.partId} value={part.partId}>
-                      {part.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                name="quantityInStock"
-                label="Количество"
-                type="number"
-                fullWidth
-                defaultValue={selectedInventory?.quantityInStock}
-                inputProps={{ min: 0 }}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Отмена</Button>
-            <Button type="submit" variant="contained">
-              {selectedInventory ? 'Сохранить' : 'Добавить'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+          <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <form onSubmit={handleSubmit}>
+              <DialogTitle>
+                {selectedInventory ? 'Редактировать запись' : 'Добавить запись'}
+              </DialogTitle>
+              <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Запчасть</InputLabel>
+                    <Select
+                      name="partId"
+                      label="Запчасть"
+                      defaultValue={selectedInventory?.partId || ''}
+                    >
+                      {parts?.map((part: Part) => (
+                        <MenuItem key={part.partId} value={part.partId}>
+                          {part.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    name="quantityInStock"
+                    label="Количество"
+                    type="number"
+                    fullWidth
+                    defaultValue={selectedInventory?.quantityInStock}
+                    inputProps={{ min: 0 }}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose}>Отмена</Button>
+                <Button type="submit" variant="contained">
+                  {selectedInventory ? 'Сохранить' : 'Добавить'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
 
-      <Dialog open={openAddQuantity || openRemoveQuantity} onClose={() => {
-        setOpenAddQuantity(false);
-        setOpenRemoveQuantity(false);
-        setQuantityToChange('');
-      }}>
-        <DialogTitle>
-          {openAddQuantity ? 'Добавить количество' : 'Уменьшить количество'}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Количество"
-            type="number"
-            fullWidth
-            value={quantityToChange}
-            onChange={(e) => setQuantityToChange(e.target.value)}
-            inputProps={{ min: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
+          <Dialog open={openAddQuantity || openRemoveQuantity} onClose={() => {
             setOpenAddQuantity(false);
             setOpenRemoveQuantity(false);
             setQuantityToChange('');
           }}>
-            Отмена
-          </Button>
-          <Button onClick={handleQuantityChangeSubmit} variant="contained">
-            Подтвердить
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogTitle>
+              {openAddQuantity ? 'Добавить количество' : 'Уменьшить количество'}
+            </DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Количество"
+                type="number"
+                fullWidth
+                value={quantityToChange}
+                onChange={(e) => setQuantityToChange(e.target.value)}
+                inputProps={{ min: 1 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => {
+                setOpenAddQuantity(false);
+                setOpenRemoveQuantity(false);
+                setQuantityToChange('');
+              }}>
+                Отмена
+              </Button>
+              <Button onClick={handleQuantityChangeSubmit} variant="contained">
+                Подтвердить
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog
-        open={openDelete}
-        onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Подтверждение удаления</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Вы уверены, что хотите удалить запись инвентаря для запчасти "{selectedInventory ? getPartName(selectedInventory.partId) : ''}"?
-            Это действие необратимо.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Отмена</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Удалить
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog
+            open={openDelete}
+            onClose={handleDeleteCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Подтверждение удаления</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Вы уверены, что хотите удалить запись инвентаря для запчасти "{selectedInventory ? getPartName(selectedInventory.partId) : ''}"?
+                Это действие необратимо.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleDeleteCancel}>Отмена</Button>
+              <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+                Удалить
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
 
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
           {notification.message}
         </Alert>
       </Snackbar>

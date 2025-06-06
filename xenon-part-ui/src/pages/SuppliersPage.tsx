@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { LoadingState } from '../components/LoadingState';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -60,7 +61,7 @@ const SuppliersPage: React.FC = () => {
     severity: 'info'
   });
 
-  const { data: suppliers, isLoading } = useQuery({
+  const { data: suppliers, isLoading, error, refetch } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/suppliers`);
@@ -208,16 +209,13 @@ const SuppliersPage: React.FC = () => {
     setSelectedSupplier(null);
   };
 
-  if (isLoading) {
-    return <Typography>Загрузка...</Typography>;
-  }
-
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">Поставщики</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Поставщики</Typography>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
           onClick={handleClickOpen}
         >
@@ -225,131 +223,143 @@ const SuppliersPage: React.FC = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Название</TableCell>
-              <TableCell>Контактное лицо</TableCell>
-              <TableCell>Телефон</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Адрес</TableCell>
-              <TableCell>Действия</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {suppliers?.map((supplier: Supplier) => (
-              <TableRow key={supplier.supplierId}>
-                <TableCell>{supplier.supplierId}</TableCell>
-                <TableCell>{supplier.name}</TableCell>
-                <TableCell>{supplier.contactPerson}</TableCell>
-                <TableCell>{supplier.phone}</TableCell>
-                <TableCell>{supplier.email}</TableCell>
-                <TableCell>{supplier.address}</TableCell>
-                <TableCell>
-                  <Tooltip title="Редактировать">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedSupplier(supplier);
-                        handleClickOpen();
-                      }}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Удалить">
-                    <IconButton
-                      onClick={() => handleDeleteClick(supplier)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <LoadingState 
+        isLoading={isLoading}
+        error={error ? 'Не удалось загрузить данные. Пожалуйста, проверьте подключение к серверу.' : null}
+        onRetry={refetch}
+        loadingText="Загрузка списка поставщиков..."
+      />
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <form onSubmit={handleSubmit}>
-          <DialogTitle>
-            {selectedSupplier ? 'Редактировать поставщика' : 'Добавить поставщика'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              <TextField
-                name="name"
-                label="Название"
-                fullWidth
-                defaultValue={selectedSupplier?.name}
-              />
-              <TextField
-                name="contactPerson"
-                label="Контактное лицо"
-                fullWidth
-                defaultValue={selectedSupplier?.contactPerson}
-              />
-              <TextField
-                name="phone"
-                label="Телефон"
-                fullWidth
-                defaultValue={selectedSupplier?.phone}
-              />
-              <TextField
-                name="email"
-                label="Email"
-                fullWidth
-                defaultValue={selectedSupplier?.email}
-              />
-              <TextField
-                name="address"
-                label="Адрес"
-                fullWidth
-                defaultValue={selectedSupplier?.address}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Отмена</Button>
-            <Button type="submit" variant="contained">
-              {selectedSupplier ? 'Сохранить' : 'Добавить'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      {!isLoading && !error && (
+        <>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Название</TableCell>
+                  <TableCell>Контактное лицо</TableCell>
+                  <TableCell>Телефон</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Адрес</TableCell>
+                  <TableCell>Действия</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {suppliers?.map((supplier: Supplier) => (
+                  <TableRow key={supplier.supplierId}>
+                    <TableCell>{supplier.supplierId}</TableCell>
+                    <TableCell>{supplier.name}</TableCell>
+                    <TableCell>{supplier.contactPerson}</TableCell>
+                    <TableCell>{supplier.phone}</TableCell>
+                    <TableCell>{supplier.email}</TableCell>
+                    <TableCell>{supplier.address}</TableCell>
+                    <TableCell>
+                      <Tooltip title="Редактировать">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedSupplier(supplier);
+                            setOpen(true);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Удалить">
+                        <IconButton
+                          onClick={() => handleDeleteClick(supplier)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      <Dialog
-        open={openDelete}
-        onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Подтверждение удаления</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Вы уверены, что хотите удалить поставщика "{selectedSupplier?.name}"?
-            Это действие необратимо.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Отмена</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Удалить
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <form onSubmit={handleSubmit}>
+              <DialogTitle>
+                {selectedSupplier ? 'Редактировать поставщика' : 'Добавить поставщика'}
+              </DialogTitle>
+              <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                  <TextField
+                    name="name"
+                    label="Название"
+                    fullWidth
+                    defaultValue={selectedSupplier?.name}
+                  />
+                  <TextField
+                    name="contactPerson"
+                    label="Контактное лицо"
+                    fullWidth
+                    defaultValue={selectedSupplier?.contactPerson}
+                  />
+                  <TextField
+                    name="phone"
+                    label="Телефон"
+                    fullWidth
+                    defaultValue={selectedSupplier?.phone}
+                  />
+                  <TextField
+                    name="email"
+                    label="Email"
+                    fullWidth
+                    defaultValue={selectedSupplier?.email}
+                  />
+                  <TextField
+                    name="address"
+                    label="Адрес"
+                    fullWidth
+                    defaultValue={selectedSupplier?.address}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose}>Отмена</Button>
+                <Button type="submit" variant="contained">
+                  {selectedSupplier ? 'Сохранить' : 'Добавить'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+
+          <Dialog
+            open={openDelete}
+            onClose={handleDeleteCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Подтверждение удаления</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Вы уверены, что хотите удалить поставщика "{selectedSupplier?.name}"?
+                Это действие необратимо.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleDeleteCancel}>Отмена</Button>
+              <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+                Удалить
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
 
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
           {notification.message}
         </Alert>
       </Snackbar>

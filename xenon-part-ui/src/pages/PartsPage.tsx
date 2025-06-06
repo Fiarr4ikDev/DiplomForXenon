@@ -30,6 +30,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { SelectChangeEvent } from '@mui/material';
 import { Typography } from '@mui/material';
+import { LoadingState } from '../components/LoadingState';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -84,7 +85,7 @@ const PartsPage: React.FC = () => {
   });
   const queryClient = useQueryClient();
 
-  const { data: parts } = useQuery({
+  const { data: parts, isLoading: partsLoading, error: partsError, refetch: refetchParts } = useQuery({
     queryKey: ['parts'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/parts`);
@@ -93,7 +94,7 @@ const PartsPage: React.FC = () => {
     },
   });
 
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/categories`);
@@ -101,13 +102,22 @@ const PartsPage: React.FC = () => {
     },
   });
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliers, isLoading: suppliersLoading, error: suppliersError, refetch: refetchSuppliers } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/suppliers`);
       return response.data;
     },
   });
+
+  const isLoading = partsLoading || categoriesLoading || suppliersLoading;
+  const error = partsError || categoriesError || suppliersError;
+
+  const handleRetry = () => {
+    refetchParts();
+    refetchCategories();
+    refetchSuppliers();
+  };
 
   const createMutation = useMutation({
     mutationFn: async (partData: PartRequest) => {
@@ -267,10 +277,11 @@ const PartsPage: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">Запчасти</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Запчасти</Typography>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
           onClick={handleClickOpen}
         >
@@ -278,151 +289,173 @@ const PartsPage: React.FC = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Название</TableCell>
-              <TableCell>Описание</TableCell>
-              <TableCell>Категория</TableCell>
-              <TableCell>Поставщик</TableCell>
-              <TableCell>Цена</TableCell>
-              <TableCell>Действия</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {parts?.map((part: Part) => (
-              <TableRow key={part.partId}>
-                <TableCell>{part.partId}</TableCell>
-                <TableCell>{part.name}</TableCell>
-                <TableCell>{part.description}</TableCell>
-                <TableCell>{part.categoryName}</TableCell>
-                <TableCell>{part.supplierName}</TableCell>
-                <TableCell>{part.unitPrice}</TableCell>
-                <TableCell>
-                  <Tooltip title="Редактировать">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedPart(part);
-                        handleClickOpen();
-                      }}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Удалить">
-                    <IconButton
-                      onClick={() => handleDeleteClick(part)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <LoadingState 
+        isLoading={isLoading}
+        error={error ? 'Не удалось загрузить данные. Пожалуйста, проверьте подключение к серверу.' : null}
+        onRetry={handleRetry}
+        loadingText="Загрузка списка запчастей и связанных данных..."
+      />
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <form onSubmit={handleSubmit}>
-          <DialogTitle>
-            {selectedPart ? 'Редактировать запчасть' : 'Добавить запчасть'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              <TextField
-                name="name"
-                label="Название"
-                fullWidth
-                defaultValue={selectedPart?.name}
-              />
-              <TextField
-                name="description"
-                label="Описание"
-                fullWidth
-                multiline
-                rows={3}
-                defaultValue={selectedPart?.description}
-              />
-              <FormControl fullWidth>
-                <InputLabel>Категория</InputLabel>
-                <Select
-                  name="categoryId"
-                  label="Категория"
-                  defaultValue={selectedPart?.categoryId || ''}
-                >
-                  {categories?.map((category: Category) => (
-                    <MenuItem key={category.categoryId} value={category.categoryId}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Поставщик</InputLabel>
-                <Select
-                  name="supplierId"
-                  label="Поставщик"
-                  defaultValue={selectedPart?.supplierId || ''}
-                >
-                  {suppliers?.map((supplier: Supplier) => (
-                    <MenuItem key={supplier.supplierId} value={supplier.supplierId}>
-                      {supplier.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                name="unitPrice"
-                label="Цена"
-                type="number"
-                fullWidth
-                defaultValue={selectedPart?.unitPrice}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Отмена</Button>
-            <Button type="submit" variant="contained">
-              {selectedPart ? 'Сохранить' : 'Добавить'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      {!isLoading && !error && (
+        <>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Название</TableCell>
+                  <TableCell>Описание</TableCell>
+                  <TableCell>Категория</TableCell>
+                  <TableCell>Поставщик</TableCell>
+                  <TableCell>Цена</TableCell>
+                  <TableCell>Действия</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {parts?.map((part: Part) => (
+                  <TableRow key={part.partId}>
+                    <TableCell>{part.partId}</TableCell>
+                    <TableCell>{part.name}</TableCell>
+                    <TableCell>{part.description}</TableCell>
+                    <TableCell>{part.categoryName}</TableCell>
+                    <TableCell>{part.supplierName}</TableCell>
+                    <TableCell>{part.unitPrice}</TableCell>
+                    <TableCell>
+                      <Tooltip title="Редактировать">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedPart(part);
+                            setNewPart({
+                              name: part.name,
+                              description: part.description,
+                              categoryId: part.categoryId,
+                              supplierId: part.supplierId,
+                              unitPrice: Number(part.unitPrice)
+                            });
+                            setOpen(true);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Удалить">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedPart(part);
+                            setOpenDelete(true);
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      <Dialog
-        open={openDelete}
-        onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Подтверждение удаления</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Вы уверены, что хотите удалить запчасть "{selectedPart?.name}"?
-            Это действие необратимо.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Отмена</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Удалить
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <form onSubmit={handleSubmit}>
+              <DialogTitle>
+                {selectedPart ? 'Редактировать запчасть' : 'Добавить запчасть'}
+              </DialogTitle>
+              <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                  <TextField
+                    name="name"
+                    label="Название"
+                    fullWidth
+                    defaultValue={selectedPart?.name}
+                  />
+                  <TextField
+                    name="description"
+                    label="Описание"
+                    fullWidth
+                    multiline
+                    rows={3}
+                    defaultValue={selectedPart?.description}
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel>Категория</InputLabel>
+                    <Select
+                      name="categoryId"
+                      label="Категория"
+                      defaultValue={selectedPart?.categoryId || ''}
+                    >
+                      {categories?.map((category: Category) => (
+                        <MenuItem key={category.categoryId} value={category.categoryId}>
+                          {category.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel>Поставщик</InputLabel>
+                    <Select
+                      name="supplierId"
+                      label="Поставщик"
+                      defaultValue={selectedPart?.supplierId || ''}
+                    >
+                      {suppliers?.map((supplier: Supplier) => (
+                        <MenuItem key={supplier.supplierId} value={supplier.supplierId}>
+                          {supplier.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    name="unitPrice"
+                    label="Цена"
+                    type="number"
+                    fullWidth
+                    defaultValue={selectedPart?.unitPrice}
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose}>Отмена</Button>
+                <Button type="submit" variant="contained">
+                  {selectedPart ? 'Сохранить' : 'Добавить'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+
+          <Dialog
+            open={openDelete}
+            onClose={handleDeleteCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Подтверждение удаления</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Вы уверены, что хотите удалить запчасть "{selectedPart?.name}"?
+                Это действие необратимо.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleDeleteCancel}>Отмена</Button>
+              <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+                Удалить
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
 
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
           {notification.message}
         </Alert>
       </Snackbar>

@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { LoadingState } from '../components/LoadingState';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -58,7 +59,7 @@ const CategoriesPage: React.FC = () => {
   });
   const queryClient = useQueryClient();
 
-  const { data: categories, isLoading } = useQuery({
+  const { data: categories, isLoading, error, refetch } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/categories`);
@@ -223,16 +224,13 @@ const CategoriesPage: React.FC = () => {
     setSelectedCategory(null);
   };
 
-  if (isLoading) {
-    return <Typography>Загрузка...</Typography>;
-  }
-
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">Категории</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Категории</Typography>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
           onClick={handleClickOpen}
         >
@@ -240,111 +238,127 @@ const CategoriesPage: React.FC = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Название</TableCell>
-              <TableCell>Описание</TableCell>
-              <TableCell>Действия</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {categories?.map((category: Category) => (
-              <TableRow key={category.categoryId}>
-                <TableCell>{category.categoryId}</TableCell>
-                <TableCell>{category.name}</TableCell>
-                <TableCell>{category.description}</TableCell>
-                <TableCell>
-                  <Tooltip title="Редактировать">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setOpen(true);
-                      }}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Удалить">
-                    <IconButton
-                      onClick={() => handleDeleteClick(category)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <LoadingState 
+        isLoading={isLoading}
+        error={error ? 'Не удалось загрузить данные. Пожалуйста, проверьте подключение к серверу.' : null}
+        onRetry={refetch}
+        loadingText="Загрузка списка категорий..."
+      />
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <form onSubmit={handleSubmit}>
-          <DialogTitle>
-            {selectedCategory ? 'Редактировать категорию' : 'Добавить категорию'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              <TextField
-                name="name"
-                label="Название"
-                fullWidth
-                defaultValue={selectedCategory?.name}
-                inputProps={{ maxLength: 100 }}
-              />
-              <TextField
-                name="description"
-                label="Описание"
-                fullWidth
-                multiline
-                rows={3}
-                defaultValue={selectedCategory?.description}
-                inputProps={{ maxLength: 250 }}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Отмена</Button>
-            <Button type="submit" variant="contained">
-              {selectedCategory ? 'Сохранить' : 'Добавить'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      {!isLoading && !error && (
+        <>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Название</TableCell>
+                  <TableCell>Описание</TableCell>
+                  <TableCell>Действия</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {categories?.map((category: Category) => (
+                  <TableRow key={category.categoryId}>
+                    <TableCell>{category.categoryId}</TableCell>
+                    <TableCell>{category.name}</TableCell>
+                    <TableCell>{category.description}</TableCell>
+                    <TableCell>
+                      <Tooltip title="Редактировать">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedCategory(category);
+                            setNewCategory({
+                              name: category.name,
+                              description: category.description
+                            });
+                            setOpen(true);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Удалить">
+                        <IconButton
+                          onClick={() => handleDeleteClick(category)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      <Dialog
-        open={openDelete}
-        onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Подтверждение удаления</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Вы уверены, что хотите удалить категорию "{selectedCategory?.name}"?
-            Это действие необратимо.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Отмена</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Удалить
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <form onSubmit={handleSubmit}>
+              <DialogTitle>
+                {selectedCategory ? 'Редактировать категорию' : 'Добавить категорию'}
+              </DialogTitle>
+              <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                  <TextField
+                    name="name"
+                    label="Название"
+                    fullWidth
+                    defaultValue={selectedCategory?.name}
+                    inputProps={{ maxLength: 100 }}
+                  />
+                  <TextField
+                    name="description"
+                    label="Описание"
+                    fullWidth
+                    multiline
+                    rows={3}
+                    defaultValue={selectedCategory?.description}
+                    inputProps={{ maxLength: 250 }}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose}>Отмена</Button>
+                <Button type="submit" variant="contained">
+                  {selectedCategory ? 'Сохранить' : 'Добавить'}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+
+          <Dialog
+            open={openDelete}
+            onClose={handleDeleteCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Подтверждение удаления</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Вы уверены, что хотите удалить категорию "{selectedCategory?.name}"?
+                Это действие необратимо.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleDeleteCancel}>Отмена</Button>
+              <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+                Удалить
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
 
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
           {notification.message}
         </Alert>
       </Snackbar>
