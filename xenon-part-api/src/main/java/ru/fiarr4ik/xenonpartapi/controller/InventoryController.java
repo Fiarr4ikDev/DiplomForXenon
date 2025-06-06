@@ -116,4 +116,41 @@ public class InventoryController {
     public ResponseEntity<Long> count() {
         return ResponseEntity.ok(inventoryService.count());
     }
+
+    /**
+     * Добавляет количество к записи инвентаря.
+     *
+     * @param id идентификатор записи инвентаря
+     * @param quantity количество для добавления
+     * @return обновленная запись инвентаря
+     */
+    @Operation(summary = "Добавить количество к записи инвентаря")
+    @ApiResponse(responseCode = "200", description = "Количество успешно добавлено",
+            content = @Content(schema = @Schema(implementation = InventoryResponseDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Запись инвентаря не найдена")
+    @PostMapping("/{id}/add")
+    public ResponseEntity<InventoryResponseDTO> addQuantity(@PathVariable Long id,
+                                                          @RequestParam Integer quantity) {
+        InventoryResponseDTO response = inventoryService.addQuantity(id, quantity);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Вычитает количество из записи инвентаря.
+     *
+     * @param id идентификатор записи инвентаря
+     * @param quantity количество для вычитания
+     * @return обновленная запись инвентаря
+     */
+    @Operation(summary = "Вычесть количество из записи инвентаря")
+    @ApiResponse(responseCode = "200", description = "Количество успешно вычтено",
+            content = @Content(schema = @Schema(implementation = InventoryResponseDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Запись инвентаря не найдена")
+    @ApiResponse(responseCode = "400", description = "Недостаточно товара на складе")
+    @PostMapping("/{id}/remove")
+    public ResponseEntity<InventoryResponseDTO> removeQuantity(@PathVariable Long id,
+                                                             @RequestParam Integer quantity) {
+        InventoryResponseDTO response = inventoryService.removeQuantity(id, quantity);
+        return ResponseEntity.ok(response);
+    }
 } 

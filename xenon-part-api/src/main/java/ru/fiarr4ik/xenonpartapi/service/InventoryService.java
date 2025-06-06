@@ -6,10 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.fiarr4ik.xenonpartapi.dto.InventoryRequestDTO;
 import ru.fiarr4ik.xenonpartapi.dto.InventoryResponseDTO;
 import ru.fiarr4ik.xenonpartapi.entity.Inventory;
+import ru.fiarr4ik.xenonpartapi.exception.ResourceNotFoundException;
 import ru.fiarr4ik.xenonpartapi.repository.InventoryRepository;
 import ru.fiarr4ik.xenonpartapi.mapper.InventoryMapper;
 import ru.fiarr4ik.xenonpartapi.repository.PartRepository;
 import ru.fiarr4ik.xenonpartapi.entity.Part;
+import java.time.LocalDateTime;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -95,7 +97,50 @@ public class InventoryService {
      *
      * @return количество записей инвентаря
      */
-    public Long count() {
+    public long count() {
         return inventoryRepository.count();
+    }
+
+    /**
+     * Добавляет количество к записи инвентаря.
+     *
+     * @param id идентификатор записи инвентаря
+     * @param quantity количество для добавления
+     * @return обновленная запись инвентаря
+     * @throws ResourceNotFoundException если запись не найдена
+     */
+    public InventoryResponseDTO addQuantity(Long id, Integer quantity) {
+        Inventory inventory = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Запись инвентаря не найдена"));
+
+        inventory.setQuantityInStock(inventory.getQuantityInStock() + quantity);
+        inventory.setLastRestockDate(LocalDateTime.now());
+
+        Inventory savedInventory = inventoryRepository.save(inventory);
+        return inventoryMapper.toDto(savedInventory);
+    }
+
+    /**
+     * Вычитает количество из записи инвентаря.
+     *
+     * @param id идентификатор записи инвентаря
+     * @param quantity количество для вычитания
+     * @return обновленная запись инвентаря
+     * @throws ResourceNotFoundException если запись не найдена
+     * @throws IllegalArgumentException если недостаточно товара на складе
+     */
+    public InventoryResponseDTO removeQuantity(Long id, Integer quantity) {
+        Inventory inventory = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Запись инвентаря не найдена"));
+
+        if (inventory.getQuantityInStock() < quantity) {
+            throw new IllegalArgumentException("Недостаточно товара на складе");
+        }
+
+        inventory.setQuantityInStock(inventory.getQuantityInStock() - quantity);
+        inventory.setLastRestockDate(LocalDateTime.now());
+
+        Inventory savedInventory = inventoryRepository.save(inventory);
+        return inventoryMapper.toDto(savedInventory);
     }
 }

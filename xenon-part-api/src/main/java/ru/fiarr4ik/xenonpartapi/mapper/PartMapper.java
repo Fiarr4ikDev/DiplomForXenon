@@ -12,6 +12,10 @@ import ru.fiarr4ik.xenonpartapi.entity.Part;
 @Component
 public interface PartMapper {
 
+    @Mapping(target = "categoryId", source = "category.categoryId")
+    @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "supplierId", source = "supplier.supplierId")
+    @Mapping(target = "supplierName", source = "supplier.name")
     PartResponseDTO toResponseDto(Part part);
 
     Part toEntity(PartRequestDTO requestDto);
