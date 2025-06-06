@@ -17,7 +17,7 @@ public class InventoryResponseDTO {
     /**
      * Идентификатор записи инвентаря.
      */
-    private Long id;
+    private Long InventoryId;
 
     /**
      * Идентификатор детали.

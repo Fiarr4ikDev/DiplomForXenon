@@ -3,7 +3,7 @@ package ru.fiarr4ik.xenonpartapi.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.fiarr4ik.xenonpartapi.dto.PartRequestDto;
+import ru.fiarr4ik.xenonpartapi.dto.PartRequestDTO;
 import ru.fiarr4ik.xenonpartapi.dto.PartResponseDTO;
 import ru.fiarr4ik.xenonpartapi.entity.Category;
 import ru.fiarr4ik.xenonpartapi.entity.Part;
@@ -34,7 +34,7 @@ public class PartService {
      * @param requestDto данные для создания запчасти
      * @return созданная запчасть
      */
-    public PartResponseDTO create(PartRequestDto requestDto) {
+    public PartResponseDTO create(PartRequestDTO requestDto) {
         Category category = categoryRepository.findById(requestDto.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Категория не найдена: " + requestDto.getCategoryId()));
         Supplier supplier = supplierRepository.findById(requestDto.getSupplierId())
@@ -55,7 +55,7 @@ public class PartService {
      * @param requestDto данные для обновления запчасти
      * @return обновленная запчасть
      */
-    public PartResponseDTO update(Long id, PartRequestDto requestDto) {
+    public PartResponseDTO update(Long id, PartRequestDTO requestDto) {
         Part existing = partRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Запчасть не найдена: " + id));
 

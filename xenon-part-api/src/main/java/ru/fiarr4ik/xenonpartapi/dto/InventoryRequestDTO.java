@@ -14,12 +14,12 @@ public class InventoryRequestDTO {
      * Идентификатор детали.
      */
     @NotNull(message = "ID детали не может быть пустым")
-    private Long partId;
+    private Long InventoryId;
 
     /**
      * Количество деталей.
      */
     @NotNull(message = "Количество не может быть пустым")
     @Min(value = 0, message = "Количество не может быть отрицательным")
-    private Integer quantity;
+    private Integer quantityInStock;
 } 

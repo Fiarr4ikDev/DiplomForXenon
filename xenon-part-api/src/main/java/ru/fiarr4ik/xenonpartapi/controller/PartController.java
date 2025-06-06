@@ -10,7 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.fiarr4ik.xenonpartapi.dto.PartRequestDto;
+import ru.fiarr4ik.xenonpartapi.dto.PartRequestDTO;
 import ru.fiarr4ik.xenonpartapi.dto.PartResponseDTO;
 import ru.fiarr4ik.xenonpartapi.service.PartService;
 
@@ -37,7 +37,7 @@ public class PartController {
     @ApiResponse(responseCode = "200", description = "Запчасть успешно создана",
             content = @Content(schema = @Schema(implementation = PartResponseDTO.class)))
     @PostMapping
-    public ResponseEntity<PartResponseDTO> create(@Valid @RequestBody PartRequestDto requestDto) {
+    public ResponseEntity<PartResponseDTO> create(@Valid @RequestBody PartRequestDTO requestDto) {
         PartResponseDTO response = partService.create(requestDto);
         return ResponseEntity.ok(response);
     }
@@ -83,7 +83,7 @@ public class PartController {
     @ApiResponse(responseCode = "404", description = "Запчасть не найдена")
     @PutMapping("/{id}")
     public ResponseEntity<PartResponseDTO> update(@PathVariable Long id,
-                                                  @Valid @RequestBody PartRequestDto requestDto) {
+                                                  @Valid @RequestBody PartRequestDTO requestDto) {
         return ResponseEntity.ok(partService.update(id, requestDto));
     }
 

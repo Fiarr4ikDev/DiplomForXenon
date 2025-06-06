@@ -15,15 +15,43 @@ import lombok.Setter;
 @Data
 public class PartResponseDTO {
 
+    /**
+     * Идентификатор детали.
+     */
     private Long partId;
 
+    /**
+     * Название детали.
+     */
     private String name;
 
+    /**
+     * Описание детали.
+     */
     private String description;
 
+    /**
+     * Идентификатор категории.
+     */
     private Long categoryId;
 
+    /**
+     * Название категории.
+     */
+    private String categoryName;
+
+    /**
+     * Идентификатор поставщика.
+     */
     private Long supplierId;
 
-    private double unitPrice;
+    /**
+     * Название поставщика.
+     */
+    private String supplierName;
+
+    /**
+     * Цена за единицу.
+     */
+    private Double unitPrice;
 }

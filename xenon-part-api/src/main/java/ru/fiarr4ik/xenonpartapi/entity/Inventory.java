@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class Inventory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long InventoryId;
 
     @ManyToOne
     @JoinColumn(name = "part_id")
