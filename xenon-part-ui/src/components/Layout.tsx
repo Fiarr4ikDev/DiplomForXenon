@@ -22,6 +22,7 @@ import {
   LocalShipping as LocalShippingIcon,
   Inventory as InventoryIcon,
   Settings as SettingsIcon,
+  Tune as TuneIcon,
 } from '@mui/icons-material';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -47,6 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: 'Поставщики', icon: <LocalShippingIcon />, path: '/suppliers' },
     { text: 'Запчасти', icon: <BuildIcon />, path: '/parts' },
     { text: 'Инвентарь', icon: <InventoryIcon />, path: '/inventory' },
+    { text: 'Конфигурация', icon: <TuneIcon />, path: '/configuration' },
     { text: 'Настройки', icon: <SettingsIcon />, path: '/settings' },
   ];
 
@@ -140,12 +142,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: '64px',
         }}
       >
         {children}
+
+        {/* Footer */}
+        <Box
+          component="footer"
+          sx={{
+            py: 2, // padding top and bottom
+            px: 3, // padding left and right
+            mt: 'auto', // push to bottom
+            backgroundColor: theme.palette.primary.dark, // dark primary color background
+            color: theme.palette.primary.contrastText, // white text
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2">
+            © {new Date().getFullYear()} Система управления запчастей "Ксенон+". Все права защищены.
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

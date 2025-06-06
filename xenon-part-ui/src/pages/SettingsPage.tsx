@@ -178,6 +178,11 @@ const SettingsPage: React.FC = () => {
             ]}
             valueLabelDisplay="auto"
           />
+          {settings.fontSize > 16 && (
+            <Typography variant="body2" sx={{ color: theme.palette.primary.main, mt: 1 }}>
+              Внимание: Размер шрифта выше стандартного (16px) может вызвать проблемы с отображением.
+            </Typography>
+          )}
         </Box>
 
         <FormControl fullWidth sx={{ mb: 3 }}>

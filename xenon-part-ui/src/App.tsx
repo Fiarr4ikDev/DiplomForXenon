@@ -14,6 +14,7 @@ import CategoriesPage from './pages/CategoriesPage';
 import SuppliersPage from './pages/SuppliersPage';
 import InventoryPage from './pages/InventoryPage';
 import SettingsPage from './pages/SettingsPage';
+import ConfigurationPage from './pages/ConfigurationPage';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 
 const queryClient = new QueryClient({
@@ -46,6 +47,7 @@ const AppContent = () => {
             <Route path="/suppliers" element={<SuppliersPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/configuration" element={<ConfigurationPage />} />
           </Routes>
         </Layout>
       </Router>

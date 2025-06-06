@@ -285,7 +285,7 @@ const PartsPage: React.FC = () => {
     const headers = ['ID', 'Название', 'Описание', 'Категория', 'Поставщик', 'Цена'];
     
     // Подготавливаем данные
-    const data = parts?.map(part => [
+    const data = parts?.map((part: Part) => [
       part.partId,
       part.name,
       part.description,
@@ -335,15 +335,15 @@ const PartsPage: React.FC = () => {
     };
 
     // Применяем стили к заголовкам
-    headers.forEach((_, index) => {
+    headers.forEach((_: any, index: number) => {
       const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
       if (!ws[cellRef]) ws[cellRef] = { v: headers[index] };
       ws[cellRef].s = headerStyle;
     });
 
     // Применяем стили к данным
-    data.forEach((row, rowIndex) => {
-      row.forEach((cell, colIndex) => {
+    data.forEach((row: any[], rowIndex: number) => {
+      row.forEach((cell: any, colIndex: number) => {
         const cellRef = XLSX.utils.encode_cell({ r: rowIndex + 1, c: colIndex });
         if (!ws[cellRef]) ws[cellRef] = { v: cell };
         ws[cellRef].s = cellStyle;
@@ -480,7 +480,7 @@ const PartsPage: React.FC = () => {
                   <TableCell>Категория</TableCell>
                   <TableCell>Поставщик</TableCell>
                   <TableCell>Цена</TableCell>
-                  <TableCell>Действия</TableCell>
+                  <TableCell sx={{ minWidth: '150px' }}>Действия</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -492,34 +492,36 @@ const PartsPage: React.FC = () => {
                     <TableCell>{part.categoryName}</TableCell>
                     <TableCell>{part.supplierName}</TableCell>
                     <TableCell>{part.unitPrice}</TableCell>
-                    <TableCell>
-                      <Tooltip title="Редактировать">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedPart(part);
-                            setNewPart({
-                              name: part.name,
-                              description: part.description,
-                              categoryId: part.categoryId,
-                              supplierId: part.supplierId,
-                              unitPrice: Number(part.unitPrice)
-                            });
-                            setOpen(true);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Удалить">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedPart(part);
-                            setOpenDelete(true);
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
+                    <TableCell sx={{ minWidth: '150px' }}>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="Редактировать">
+                          <IconButton
+                            onClick={() => {
+                              setSelectedPart(part);
+                              setNewPart({
+                                name: part.name,
+                                description: part.description,
+                                categoryId: part.categoryId,
+                                supplierId: part.supplierId,
+                                unitPrice: Number(part.unitPrice)
+                              });
+                              setOpen(true);
+                            }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Удалить">
+                          <IconButton
+                            onClick={() => {
+                              setSelectedPart(part);
+                              setOpenDelete(true);
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -644,10 +646,10 @@ const PartsPage: React.FC = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
         <Alert
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

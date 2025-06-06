@@ -284,7 +284,7 @@ const SuppliersPage: React.FC = () => {
     const headers = ['ID', 'Название', 'Контактное лицо', 'Телефон', 'Email', 'Адрес'];
     
     // Подготавливаем данные
-    const data = suppliers?.map(supplier => [
+    const data = suppliers?.map((supplier: Supplier) => [
       supplier.supplierId,
       supplier.name,
       supplier.contactPerson,
@@ -334,15 +334,15 @@ const SuppliersPage: React.FC = () => {
     };
 
     // Применяем стили к заголовкам
-    headers.forEach((_, index) => {
+    headers.forEach((_, index: number) => {
       const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
       if (!ws[cellRef]) ws[cellRef] = { v: headers[index] };
       ws[cellRef].s = headerStyle;
     });
 
     // Применяем стили к данным
-    data.forEach((row, rowIndex) => {
-      row.forEach((cell, colIndex) => {
+    data.forEach((row: any[], rowIndex: number) => {
+      row.forEach((cell: any, colIndex: number) => {
         const cellRef = XLSX.utils.encode_cell({ r: rowIndex + 1, c: colIndex });
         if (!ws[cellRef]) ws[cellRef] = { v: cell };
         ws[cellRef].s = cellStyle;
@@ -410,7 +410,7 @@ const SuppliersPage: React.FC = () => {
                   <TableCell>Телефон</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>Адрес</TableCell>
-                  <TableCell>Действия</TableCell>
+                  <TableCell sx={{ minWidth: '180px' }}>Действия</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -422,7 +422,7 @@ const SuppliersPage: React.FC = () => {
                     <TableCell>{supplier.phone}</TableCell>
                     <TableCell>{supplier.email}</TableCell>
                     <TableCell>{supplier.address}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ minWidth: '180px' }}>
                       <Tooltip title="Редактировать">
                         <IconButton
                           onClick={() => {

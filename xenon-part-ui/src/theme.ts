@@ -133,10 +133,23 @@ const getThemeOptions = (mode: 'light' | 'dark', primaryColor: string, settings:
     },
   },
   typography: {
-    fontSize: settings.fontSize,
+    fontSize: 15,
+    h1: { fontSize: 19 },
+    h2: { fontSize: 19 },
+    h3: { fontSize: 19 },
+    h4: { fontSize: 19 },
+    h5: { fontSize: 18 },
+    h6: { fontSize: 17 },
+    subtitle1: { fontSize: 16 },
+    subtitle2: { fontSize: 15 },
+    body1: { fontSize: 15 },
+    body2: { fontSize: 14 },
     button: {
       textTransform: 'none',
+      fontSize: 15,
     },
+    caption: { fontSize: 13 },
+    overline: { fontSize: 13 },
   },
 });
 
