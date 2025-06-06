@@ -9,11 +9,9 @@ import ru.fiarr4ik.xenonpartapi.entity.Inventory;
 
 @Mapper(componentModel = "spring")
 public interface InventoryMapper {
-    @Mapping(target = "id", ignore = true)
     Inventory toEntity(InventoryRequestDTO dto);
 
     InventoryResponseDTO toDto(Inventory entity);
 
-    @Mapping(target = "id", ignore = true)
     void updateEntityFromDto(InventoryRequestDTO dto, @MappingTarget Inventory entity);
 } 
