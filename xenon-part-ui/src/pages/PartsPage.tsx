@@ -31,6 +31,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { SelectChangeEvent } from '@mui/material';
 import { Typography } from '@mui/material';
 import { LoadingState } from '../components/LoadingState';
+import { FilterList as FilterListIcon, FileDownload as FileDownloadIcon, TableChart as TableChartIcon } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -275,18 +277,87 @@ const PartsPage: React.FC = () => {
     setSelectedPart(null);
   };
 
+  const handleExportToExcel = () => {
+    // Создаем заголовки для Excel
+    const headers = ['ID', 'Название', 'Описание', 'Категория', 'Поставщик', 'Цена'];
+    
+    // Подготавливаем данные
+    const data = parts?.map(part => [
+      part.partId,
+      part.name,
+      part.description,
+      part.categoryName,
+      part.supplierName,
+      part.unitPrice
+    ]) || [];
+
+    // Создаем рабочую книгу
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+
+    // Устанавливаем ширину столбцов
+    const colWidths = [
+      { wch: 5 },  // ID
+      { wch: 30 }, // Название
+      { wch: 40 }, // Описание
+      { wch: 20 }, // Категория
+      { wch: 20 }, // Поставщик
+      { wch: 15 }  // Цена
+    ];
+    ws['!cols'] = colWidths;
+
+    // Стили для заголовков
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+      fill: { fgColor: { rgb: "1976D2" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } }
+      }
+    };
+
+    // Стили для ячеек с данными
+    const cellStyle = {
+      font: { sz: 11 },
+      alignment: { vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } }
+      }
+    };
+
+    // Применяем стили к заголовкам
+    headers.forEach((_, index) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
+      if (!ws[cellRef]) ws[cellRef] = { v: headers[index] };
+      ws[cellRef].s = headerStyle;
+    });
+
+    // Применяем стили к данным
+    data.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIndex + 1, c: colIndex });
+        if (!ws[cellRef]) ws[cellRef] = { v: cell };
+        ws[cellRef].s = cellStyle;
+      });
+    });
+
+    // Добавляем лист в книгу
+    XLSX.utils.book_append_sheet(wb, ws, 'Запчасти');
+
+    // Сохраняем файл
+    XLSX.writeFile(wb, 'parts.xlsx');
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Запчасти</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleClickOpen}
-        >
-          Добавить запчасть
-        </Button>
       </Box>
 
       <LoadingState 
@@ -298,6 +369,34 @@ const PartsPage: React.FC = () => {
 
       {!isLoading && !error && (
         <>
+          <Paper sx={{ p: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<FilterListIcon />}
+              >
+                Фильтры
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<FileDownloadIcon />}
+                onClick={handleExportToExcel}
+              >
+                Экспорт в Excel
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={handleClickOpen}
+              >
+                Добавить запчасть
+              </Button>
+            </Box>
+          </Paper>
+
           <TableContainer component={Paper}>
             <Table>
               <TableHead>

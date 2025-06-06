@@ -43,9 +43,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const menuItems = [
     { text: 'Главная', icon: <HomeIcon />, path: '/' },
-    { text: 'Запчасти', icon: <BuildIcon />, path: '/parts' },
     { text: 'Категории', icon: <CategoryIcon />, path: '/categories' },
     { text: 'Поставщики', icon: <LocalShippingIcon />, path: '/suppliers' },
+    { text: 'Запчасти', icon: <BuildIcon />, path: '/parts' },
     { text: 'Инвентарь', icon: <InventoryIcon />, path: '/inventory' },
     { text: 'Настройки', icon: <SettingsIcon />, path: '/settings' },
   ];
