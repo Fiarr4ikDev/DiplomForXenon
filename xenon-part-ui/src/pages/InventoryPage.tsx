@@ -120,6 +120,7 @@ const InventoryPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      (window as any).refreshDashboardData?.();
       setOpen(false);
     },
   });
@@ -130,6 +131,7 @@ const InventoryPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      (window as any).refreshDashboardData?.();
       setOpen(false);
       setOpenAddQuantity(false);
       setOpenRemoveQuantity(false);
@@ -148,6 +150,7 @@ const InventoryPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      (window as any).refreshDashboardData?.();
       setNotification({
         open: true,
         message: 'Запись инвентаря успешно удалена',

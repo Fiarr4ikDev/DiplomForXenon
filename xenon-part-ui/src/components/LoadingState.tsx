@@ -7,7 +7,7 @@ const StyledBox = styled(Box)(({ theme }) => ({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  minHeight: '200px',
+  minHeight: '400px',
   padding: theme.spacing(3),
   textAlign: 'center',
 }));
@@ -23,15 +23,13 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   isLoading = false,
   error = null,
   onRetry,
-  loadingText = 'Загрузка...',
+  loadingText = 'Ожидание подключения к API...',
 }) => {
   if (isLoading) {
     return (
       <StyledBox>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          {loadingText}
-        </Typography>
+        <CircularProgress sx={{ mb: 2 }} />
+        <Typography>{loadingText}</Typography>
       </StyledBox>
     );
   }

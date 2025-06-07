@@ -131,6 +131,7 @@ const PartsPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      (window as any).refreshDashboardData?.();
       setOpen(false);
     },
   });
@@ -142,6 +143,7 @@ const PartsPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      (window as any).refreshDashboardData?.();
       setOpen(false);
     },
   });
@@ -159,6 +161,7 @@ const PartsPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      (window as any).refreshDashboardData?.();
       setNotification({
         open: true,
         message: 'Запчасть успешно удалена',

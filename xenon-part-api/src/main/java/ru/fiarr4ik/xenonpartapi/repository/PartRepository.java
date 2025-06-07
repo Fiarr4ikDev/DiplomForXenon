@@ -2,6 +2,7 @@ package ru.fiarr4ik.xenonpartapi.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.fiarr4ik.xenonpartapi.entity.Part;
 import ru.fiarr4ik.xenonpartapi.entity.Category;
@@ -41,8 +42,8 @@ public interface PartRepository extends JpaRepository<Part, Long> {
     @Query("SELECT part.name as partName, inventory.quantityInStock as quantity " +
            "FROM Part part " +
            "JOIN Inventory inventory ON part.partId = inventory.part.partId " +
-           "WHERE inventory.quantityInStock < 10")
-    List<Map<String, Object>> findLowStockParts();
+           "WHERE inventory.quantityInStock < :threshold")
+    List<Map<String, Object>> findLowStockParts(@Param("threshold") Integer threshold);
 
     @Query("SELECT " +
            "COUNT(part) as totalParts, " +

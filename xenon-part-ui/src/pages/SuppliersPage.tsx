@@ -80,6 +80,7 @@ const SuppliersPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      (window as any).refreshDashboardData?.();
       setOpen(false);
     },
   });
@@ -91,6 +92,7 @@ const SuppliersPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      (window as any).refreshDashboardData?.();
       setOpen(false);
     },
   });

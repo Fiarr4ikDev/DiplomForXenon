@@ -2,6 +2,7 @@ package ru.fiarr4ik.xenonpartapi.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.fiarr4ik.xenonpartapi.repository.CategoryRepository;
 import ru.fiarr4ik.xenonpartapi.repository.InventoryRepository;
@@ -52,8 +53,8 @@ public class MetricsController {
     }
 
     @GetMapping("/low-stock")
-    public Object getLowStock() {
-        return partRepository.findLowStockParts();
+    public Object getLowStock(@RequestParam(defaultValue = "10") Integer threshold) {
+        return inventoryRepository.getLowStockDetails(threshold);
     }
 
     @GetMapping("/overall")
@@ -92,17 +93,23 @@ public class MetricsController {
     }
 
     @GetMapping("/low-stock-details")
-    public Object getLowStockDetails() {
-        return inventoryRepository.getLowStockDetails();
+    public Object getLowStockDetails(@RequestParam(defaultValue = "10") Integer threshold) {
+        return inventoryRepository.getLowStockDetails(threshold);
     }
 
     @GetMapping("/stock-distribution")
-    public Object getStockDistribution() {
-        return inventoryRepository.getStockLevelDistribution();
+    public Object getStockDistribution(
+        @RequestParam(defaultValue = "10") Integer lowThreshold,
+        @RequestParam(defaultValue = "50") Integer mediumThreshold
+    ) {
+        return inventoryRepository.getStockLevelDistribution(lowThreshold, mediumThreshold);
     }
 
     @GetMapping("/dashboard")
-    public Map<String, Object> getDashboardData() {
+    public Map<String, Object> getDashboardData(
+        @RequestParam(defaultValue = "10") Integer lowThreshold,
+        @RequestParam(defaultValue = "50") Integer mediumThreshold
+    ) {
         Map<String, Object> dashboard = new HashMap<>();
         
         dashboard.put("overall", partRepository.getOverallMetrics());
@@ -110,11 +117,11 @@ public class MetricsController {
         dashboard.put("partsBySupplier", partRepository.countPartsBySupplier());
         dashboard.put("valueByCategory", partRepository.calculateValueByCategory());
         dashboard.put("valueBySupplier", partRepository.calculateValueBySupplier());
-        dashboard.put("lowStock", partRepository.findLowStockParts());
+        dashboard.put("lowStock", partRepository.findLowStockParts(lowThreshold));
         dashboard.put("categoryStats", categoryRepository.getCategoryStatistics());
         dashboard.put("supplierStats", supplierRepository.getSupplierStatistics());
         dashboard.put("inventoryOverview", inventoryRepository.getInventoryOverview());
-        dashboard.put("stockDistribution", inventoryRepository.getStockLevelDistribution());
+        dashboard.put("stockDistribution", inventoryRepository.getStockLevelDistribution(lowThreshold, mediumThreshold));
         
         return dashboard;
     }

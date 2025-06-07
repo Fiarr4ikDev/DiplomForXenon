@@ -102,9 +102,34 @@ const MetricsDashboard: React.FC = () => {
   // Состояние для отслеживания подключения
   const [isConnecting, setIsConnecting] = useState(true);
 
-  useEffect(() => {
-    let retryTimeout: NodeJS.Timeout;
+  // Добавляем состояния для пороговых значений
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(10);
+  const [mediumStockThreshold, setMediumStockThreshold] = useState<number>(50);
 
+  // Добавляем состояние для отслеживания успешной загрузки
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    // Загружаем пороговые значения при монтировании компонента
+    const savedLowThreshold = localStorage.getItem('lowStockThreshold');
+    const savedMediumThreshold = localStorage.getItem('mediumStockThreshold');
+    
+    if (savedLowThreshold !== null) {
+      const numThreshold = Number(savedLowThreshold);
+      if (!isNaN(numThreshold)) {
+        setLowStockThreshold(numThreshold);
+      }
+    }
+    
+    if (savedMediumThreshold !== null) {
+      const numThreshold = Number(savedMediumThreshold);
+      if (!isNaN(numThreshold)) {
+        setMediumStockThreshold(numThreshold);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         // Загрузка общей статистики
@@ -133,9 +158,14 @@ const MetricsDashboard: React.FC = () => {
       }
 
       try {
-        // Загрузка распределения запасов
+        // Загрузка распределения запасов с учетом пороговых значений
         setLoadingStockDistribution(true);
-        const response = await axios.get(`${API_URL}/metrics/stock-distribution`);
+        const response = await axios.get(`${API_URL}/metrics/stock-distribution`, {
+          params: {
+            lowThreshold: lowStockThreshold,
+            mediumThreshold: mediumStockThreshold
+          }
+        });
         setStockDistributionData(response.data);
         setErrorStockDistribution(null);
       } catch (error) {
@@ -172,9 +202,13 @@ const MetricsDashboard: React.FC = () => {
       }
 
       try {
-        // Загрузка деталей с низким запасом
+        // Загрузка деталей с низким запасом с учетом порогового значения
         setLoadingLowStock(true);
-        const response = await axios.get(`${API_URL}/metrics/low-stock`);
+        const response = await axios.get(`${API_URL}/metrics/low-stock`, {
+          params: {
+            threshold: lowStockThreshold
+          }
+        });
         setLowStockData(response.data);
         setErrorLowStock(null);
       } catch (error) {
@@ -188,26 +222,28 @@ const MetricsDashboard: React.FC = () => {
       const hasAnyData = overallData || inventoryData || stockDistributionData || 
                         categoryStatsData || supplierStatsData || lowStockData;
 
-      if (!hasAnyData) {
-        // Если нет данных, планируем следующую попытку через 3 секунды
-        retryTimeout = setTimeout(() => {
-          fetchDashboardData();
-        }, 3000);
-      } else {
-        // Если есть данные, считаем что подключение установлено
+      if (hasAnyData) {
+        setIsInitialLoad(false);
         setIsConnecting(false);
       }
     };
 
     fetchDashboardData();
+  }, [lowStockThreshold, mediumStockThreshold]); // Обновляем при изменении пороговых значений
 
-    // Очистка таймера при размонтировании компонента
+  // Добавляем функцию для обновления данных
+  const refreshData = () => {
+    setIsInitialLoad(true);
+    setIsConnecting(true);
+  };
+
+  // Экспортируем функцию обновления через window
+  useEffect(() => {
+    (window as any).refreshDashboardData = refreshData;
     return () => {
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-      }
+      delete (window as any).refreshDashboardData;
     };
-  }, []); // Пустой массив зависимостей, так как мы хотим запустить эффект только один раз
+  }, []);
 
   // Helper function to format value with currency
   const formatCurrency = (value: number | undefined) => {
