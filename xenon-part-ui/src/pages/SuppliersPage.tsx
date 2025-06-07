@@ -64,6 +64,7 @@ const SuppliersPage: React.FC = () => {
     severity: 'info'
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: suppliers, isLoading, error, refetch } = useQuery({
     queryKey: ['suppliers'],
@@ -358,6 +359,15 @@ const SuppliersPage: React.FC = () => {
     XLSX.writeFile(wb, 'suppliers.xlsx');
   };
 
+  // Фильтрация данных на основе поискового запроса
+  const filteredSuppliers = suppliers?.filter(supplier => 
+    supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    supplier.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    supplier.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    supplier.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    supplier.address.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -374,31 +384,42 @@ const SuppliersPage: React.FC = () => {
       {!isLoading && !error && (
         <>
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
+              <TextField
+                label="Поиск"
                 variant="outlined"
-                color="primary"
-                startIcon={<UploadIcon />}
-                onClick={() => setImportOpen(true)}
-              >
-                Импорт
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportToExcel}
-              >
-                Экспорт в Excel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleClickOpen}
-              >
-                Добавить поставщика
-              </Button>
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ width: '300px' }}
+                placeholder="Поиск по названию, контакту, телефону, email или адресу"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onClick={() => setImportOpen(true)}
+                >
+                  Импорт
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportToExcel}
+                >
+                  Экспорт в Excel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleClickOpen}
+                >
+                  Добавить поставщика
+                </Button>
+              </Box>
             </Box>
           </Paper>
 
@@ -416,7 +437,7 @@ const SuppliersPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {suppliers?.map((supplier: Supplier) => (
+                {filteredSuppliers?.map((supplier: Supplier) => (
                   <TableRow key={supplier.supplierId}>
                     <TableCell>{supplier.supplierId}</TableCell>
                     <TableCell>{supplier.name}</TableCell>

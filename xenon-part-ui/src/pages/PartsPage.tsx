@@ -89,6 +89,7 @@ const PartsPage: React.FC = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: parts, isLoading: partsLoading, error: partsError, refetch: refetchParts } = useQuery({
     queryKey: ['parts'],
@@ -429,6 +430,14 @@ const PartsPage: React.FC = () => {
     };
   };
 
+  // Фильтрация данных на основе поискового запроса
+  const filteredParts = parts?.filter(part => 
+    part.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    part.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    part.categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    part.supplierName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -445,31 +454,42 @@ const PartsPage: React.FC = () => {
       {!isLoading && !error && (
         <>
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
+              <TextField
+                label="Поиск"
                 variant="outlined"
-                color="primary"
-                startIcon={<UploadIcon />}
-                onClick={() => setImportOpen(true)}
-              >
-                Импорт
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportToExcel}
-              >
-                Экспорт в Excel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleClickOpen}
-              >
-                Добавить запчасть
-              </Button>
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ width: '300px' }}
+                placeholder="Поиск по названию, описанию, категории или поставщику"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onClick={() => setImportOpen(true)}
+                >
+                  Импорт
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportToExcel}
+                >
+                  Экспорт в Excel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleClickOpen}
+                >
+                  Добавить запчасть
+                </Button>
+              </Box>
             </Box>
           </Paper>
 
@@ -487,7 +507,7 @@ const PartsPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {parts?.map((part: Part) => (
+                {filteredParts?.map((part: Part) => (
                   <TableRow key={part.partId}>
                     <TableCell>{part.partId}</TableCell>
                     <TableCell>{part.name}</TableCell>

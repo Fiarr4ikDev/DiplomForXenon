@@ -88,6 +88,7 @@ const InventoryPage: React.FC = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: inventory, isLoading: isInventoryLoading, error: inventoryError, refetch: refetchInventory } = useQuery<Inventory[]>({
     queryKey: ['inventory'],
@@ -450,6 +451,13 @@ const InventoryPage: React.FC = () => {
     return part ? part.name : 'Неизвестная запчасть';
   };
 
+  // Фильтрация данных на основе поискового запроса
+  const filteredInventory = inventory?.filter(item => 
+    getPartName(item.partId).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.quantityInStock.toString().includes(searchQuery) ||
+    new Date(item.lastRestockDate).toLocaleDateString().includes(searchQuery)
+  );
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -466,31 +474,42 @@ const InventoryPage: React.FC = () => {
       {!isLoading && !error && (
         <>
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
+              <TextField
+                label="Поиск"
                 variant="outlined"
-                color="primary"
-                startIcon={<UploadIcon />}
-                onClick={() => setImportOpen(true)}
-              >
-                Импорт
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportToExcel}
-              >
-                Экспорт в Excel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleClickOpen}
-              >
-                Добавить запись
-              </Button>
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ width: '300px' }}
+                placeholder="Поиск по названию запчасти, количеству или дате"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onClick={() => setImportOpen(true)}
+                >
+                  Импорт
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportToExcel}
+                >
+                  Экспорт в Excel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleClickOpen}
+                >
+                  Добавить запись
+                </Button>
+              </Box>
             </Box>
           </Paper>
 
@@ -506,7 +525,7 @@ const InventoryPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {inventory?.map((item: Inventory) => (
+                {filteredInventory?.map((item: Inventory) => (
                   <TableRow key={item.inventoryId}>
                     <TableCell>{item.inventoryId}</TableCell>
                     <TableCell>{getPartName(item.partId)}</TableCell>

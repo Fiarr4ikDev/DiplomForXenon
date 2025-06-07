@@ -53,6 +53,7 @@ const CategoriesPage: React.FC = () => {
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: categories, isLoading, error, refetch } = useQuery({
     queryKey: ['categories'],
@@ -338,6 +339,12 @@ const CategoriesPage: React.FC = () => {
     XLSX.writeFile(wb, 'categories.xlsx');
   };
 
+  // Фильтрация данных на основе поискового запроса
+  const filteredCategories = categories?.filter(category => 
+    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    category.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -354,31 +361,42 @@ const CategoriesPage: React.FC = () => {
       {!isLoading && !error && (
         <>
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
+              <TextField
+                label="Поиск"
                 variant="outlined"
-                color="primary"
-                startIcon={<UploadIcon />}
-                onClick={() => setImportOpen(true)}
-              >
-                Импорт
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportToExcel}
-              >
-                Экспорт в Excel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleClickOpen}
-              >
-                Добавить категорию
-              </Button>
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ width: '300px' }}
+                placeholder="Поиск по названию или описанию"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onClick={() => setImportOpen(true)}
+                >
+                  Импорт
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportToExcel}
+                >
+                  Экспорт в Excel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleClickOpen}
+                >
+                  Добавить категорию
+                </Button>
+              </Box>
             </Box>
           </Paper>
 
@@ -393,7 +411,7 @@ const CategoriesPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {categories?.map((category: Category) => (
+                {filteredCategories?.map((category: Category) => (
                   <TableRow key={category.categoryId}>
                     <TableCell>{category.categoryId}</TableCell>
                     <TableCell>{category.name}</TableCell>
