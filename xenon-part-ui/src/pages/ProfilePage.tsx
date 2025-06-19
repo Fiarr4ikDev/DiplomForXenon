@@ -23,12 +23,35 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import EditIcon from '@mui/icons-material/Edit';
 import LogoutIcon from '@mui/icons-material/Logout';
+import WavingHandIcon from '@mui/icons-material/WavingHand';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { keyframes } from '@mui/system';
 
 interface UpdateUserRequest {
   username: string;
   currentPassword: string;
   newPassword: string;
 }
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 5) return 'Доброй ночи';
+  if (hour < 12) return 'Доброе утро';
+  if (hour < 18) return 'Добрый день';
+  return 'Добрый вечер';
+};
+
+// Анимация для справки
+const fadeInUp = keyframes`
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+`;
+
+// Анимация для аватарки
+const avatarPop = keyframes`
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+`;
 
 const ProfilePage: React.FC = () => {
   const { isAuthenticated, username, avatarUrl, updateUsername, fetchAndSetAvatar, logout } = useAuth();
@@ -143,30 +166,45 @@ const ProfilePage: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Paper elevation={3} sx={{
-        p: 3,
+        p: 0,
         mb: 3,
         borderRadius: 3,
         boxShadow: 3,
         maxWidth: 480,
         mx: 'auto',
         mt: 4,
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 2,
+        gap: 0,
       }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
-          Личный кабинет
-        </Typography>
-        <Divider sx={{ width: '100%', mb: 2 }} />
-        <Box sx={{ mb: 2, position: 'relative' }}>
+        <Box sx={{
+          width: '100%',
+          py: 5,
+          px: 2,
+          pb: 7,
+          bgcolor: 'linear-gradient(90deg, #2196f3 0%, #1976d2 100%)',
+          background: 'linear-gradient(90deg, #2196f3 0%, #1976d2 100%)',
+          color: '#fff',
+          textAlign: 'center',
+          mb: 0,
+        }}>
+          <WavingHandIcon sx={{ fontSize: 36, verticalAlign: 'middle', mr: 1 }} />
+          <Typography variant="h5" component="span" sx={{ fontWeight: 700, letterSpacing: 1 }}>
+            {getGreeting()}, {username}!
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, opacity: 0.85 }}>
+            Добро пожаловать в ваш личный кабинет
+          </Typography>
+        </Box>
+        <Box sx={{ mt: -7, mb: 2, position: 'relative', zIndex: 2, animation: `${avatarPop} 0.7s cubic-bezier(.68,-0.55,.27,1.55)` }}>
           <Box sx={{
             width: 140,
             height: 140,
             borderRadius: '50%',
-            border: '3px solid',
-            borderColor: (theme) => theme.palette.primary.main,
-            boxShadow: 4,
+            border: '5px solid #fff',
+            boxShadow: '0 8px 32px 0 rgba(33,150,243,0.25), 0 2px 8px 0 rgba(0,0,0,0.10)',
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
@@ -174,6 +212,8 @@ const ProfilePage: React.FC = () => {
             bgcolor: (theme) => theme.palette.grey[100],
             cursor: 'pointer',
             position: 'relative',
+            transition: 'transform 0.4s cubic-bezier(.68,-0.55,.27,1.55)',
+            '&:hover': { transform: 'scale(1.06) rotate(-2deg)' },
           }}
           onMouseEnter={() => setAvatarHover(true)}
           onMouseLeave={() => setAvatarHover(false)}
@@ -239,6 +279,12 @@ const ProfilePage: React.FC = () => {
           <Button variant="outlined" startIcon={<EditIcon />} onClick={() => { setEditUsername(username || ''); setEditOpen(true); }}>Редактировать</Button>
           <Button variant="contained" color="error" startIcon={<LogoutIcon />} onClick={() => setLogoutOpen(true)}>Выйти</Button>
         </Stack>
+        <Box sx={{ mt: 3, mb: 1, px: 2, py: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1, boxShadow: 1, maxWidth: 340, mx: 'auto', animation: `${fadeInUp} 0.7s 0.2s both` }}>
+          <InfoOutlinedIcon color="primary" sx={{ fontSize: 28 }} />
+          <Typography variant="body2" color="text.secondary">
+            В профиле вы можете изменить имя пользователя, загрузить аватарку и выйти из системы.
+          </Typography>
+        </Box>
       </Paper>
 
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="xs" fullWidth>
