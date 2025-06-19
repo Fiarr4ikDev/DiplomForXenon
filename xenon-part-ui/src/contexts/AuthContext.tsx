@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import axios from 'axios';
 import { API_URL } from '../config';
 import { LoginRequest } from '../pages/LoginPage'; // Предполагается, что LoginRequest находится здесь или в общем месте
+import { jwtDecode } from 'jwt-decode';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -15,35 +16,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+interface JwtPayload {
+  userId: number;
+  username: string;
+  exp: number;
+  iat: number;
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
 
   const fetchAndSetAvatar = async () => {
-    const userId = 1;
+    const token = localStorage.getItem('authToken');
+    let userId = 1;
+    if (token) {
+      try {
+        const decoded = jwtDecode(token) as JwtPayload;
+        userId = decoded.userId;
+      } catch (e) {
+        userId = 1;
+      }
+    }
     try {
-      const response = await axios.get(`${API_URL}/auth/avatar/${userId}`, { responseType: 'arraybuffer' });
-
+      const response = await axios.get(`${API_URL}/auth/avatar/${userId}`, { responseType: 'arraybuffer', headers: { Authorization: `Bearer ${token}` } });
       const blob = new Blob([response.data], { type: response.headers['content-type'] });
       const reader = new FileReader();
-
       reader.onloadend = () => {
         const imageUrl = reader.result as string;
         setAvatarUrl(imageUrl);
         localStorage.setItem('avatarUrl', imageUrl);
       };
-
       reader.onerror = () => {
-        console.error('FileReader error');
         setAvatarUrl(null);
         localStorage.removeItem('avatarUrl');
       };
-
       reader.readAsDataURL(blob);
-
     } catch (error) {
-      console.error('Error fetching avatar:', error);
       setAvatarUrl(null);
       localStorage.removeItem('avatarUrl');
     }
@@ -53,7 +64,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const token = localStorage.getItem('authToken');
     const storedUsername = localStorage.getItem('username');
     const storedAvatarUrl = localStorage.getItem('avatarUrl');
-
+    let storedUserId = null;
+    if (token) {
+      try {
+        const decoded = jwtDecode(token) as JwtPayload;
+        storedUserId = decoded.userId;
+        setUserId(storedUserId);
+        localStorage.setItem('userId', String(storedUserId));
+      } catch (e) {
+        setUserId(null);
+        localStorage.removeItem('userId');
+      }
+    }
     if (token && storedUsername) {
       setIsAuthenticated(true);
       setUsername(storedUsername);
@@ -66,46 +88,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('authToken');
       localStorage.removeItem('username');
       localStorage.removeItem('avatarUrl');
+      localStorage.removeItem('userId');
       setIsAuthenticated(false);
       setUsername(null);
       setAvatarUrl(null);
+      setUserId(null);
     }
   }, []);
 
   const login = async (credentials: LoginRequest): Promise<boolean> => {
     try {
-      console.log('Attempting login with:', credentials);
       const response = await axios.post(`${API_URL}/auth/login`, credentials);
-      console.log('Login response:', response);
-      console.log('Login response data:', response.data);
-
-      if (response.data && response.data.token && response.data.username) {
+      if (response.data && response.data.token && response.data.username && response.data.userId) {
         localStorage.setItem('authToken', response.data.token);
         localStorage.setItem('username', response.data.username);
+        localStorage.setItem('userId', String(response.data.userId));
         setIsAuthenticated(true);
         setUsername(response.data.username);
-
+        setUserId(response.data.userId);
         fetchAndSetAvatar();
-
         return true;
       } else {
-        console.log('Login failed: No token or username in response');
         setIsAuthenticated(false);
         setUsername(null);
         setAvatarUrl(null);
+        setUserId(null);
         return false;
       }
     } catch (error: any) {
-      console.error('Login failed:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        url: `${API_URL}/auth/login`
-      });
       setIsAuthenticated(false);
       setUsername(null);
       setAvatarUrl(null);
+      setUserId(null);
       return false;
     }
   };
@@ -114,9 +128,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('authToken');
     localStorage.removeItem('username');
     localStorage.removeItem('avatarUrl');
+    localStorage.removeItem('userId');
     setIsAuthenticated(false);
     setUsername(null);
     setAvatarUrl(null);
+    setUserId(null);
   };
 
   const updateUsername = (newUsername: string) => {

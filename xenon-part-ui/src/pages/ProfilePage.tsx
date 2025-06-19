@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -14,6 +14,7 @@ import axios from 'axios';
 import { API_URL } from '../config';
 import { useAuth } from '../contexts/AuthContext';
 import PersonIcon from '@mui/icons-material/Person';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 
 interface UpdateUserRequest {
   username: string;
@@ -36,6 +37,8 @@ const ProfilePage: React.FC = () => {
     message: '',
     severity: 'info'
   });
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
+  const [avatarHover, setAvatarHover] = useState(false);
 
   const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -83,10 +86,11 @@ const ProfilePage: React.FC = () => {
     formData.append('avatar', avatarFile);
 
     try {
+      const token = localStorage.getItem('authToken');
+      console.log('TOKEN FOR AVATAR UPLOAD:', token);
       const response = await axios.post(`${API_URL}/auth/avatar/upload`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(isAuthenticated && { Authorization: `Bearer ${localStorage.getItem('authToken')}` }),
+          ...(isAuthenticated && { Authorization: `Bearer ${token}` }),
         },
       });
 
@@ -112,6 +116,13 @@ const ProfilePage: React.FC = () => {
   const handleCloseNotification = () => {
     setNotification(prev => ({ ...prev, open: false }));
   };
+
+  useEffect(() => {
+    if (avatarFile) {
+      handleAvatarUpload();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avatarFile]);
 
   if (!isAuthenticated) {
     return null;
@@ -172,7 +183,13 @@ const ProfilePage: React.FC = () => {
             overflow: 'hidden',
             boxShadow: 1,
             borderRadius: 2,
-          }}>
+            position: 'relative',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={() => setAvatarHover(true)}
+          onMouseLeave={() => setAvatarHover(false)}
+          onClick={() => avatarInputRef.current?.click()}
+          >
              <Avatar
               sx={{
                 width: '100%',
@@ -180,12 +197,42 @@ const ProfilePage: React.FC = () => {
                 borderRadius: 2,
                 objectFit: 'cover',
                 bgcolor: (theme) => theme.palette.grey[200],
+                transition: 'filter 0.2s',
+                filter: avatarHover ? 'brightness(0.7)' : 'none',
               }}
               src={avatarUrl || undefined}
               variant="rounded"
             >
               {!avatarUrl && <PersonIcon sx={{ fontSize: { xs: 60, sm: 80 }, color: (theme) => theme.palette.grey[400] }} />}
             </Avatar>
+            {avatarHover && (
+              <Box sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                bgcolor: 'rgba(0,0,0,0.4)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                zIndex: 2,
+                pointerEvents: 'none',
+                borderRadius: 2,
+              }}>
+                <PhotoCameraIcon sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="body2">Обновить аватарку</Typography>
+              </Box>
+            )}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setAvatarFile(e.target.files ? e.target.files[0] : null)}
+              style={{ display: 'none' }}
+            />
           </Box>
 
           <Box sx={{ flexGrow: 1, width: '100%' }}>
@@ -252,17 +299,6 @@ const ProfilePage: React.FC = () => {
               <Typography variant="h6" gutterBottom sx={{ color: (theme) => theme.palette.primary.main }}>
                 Загрузить новую аватарку
               </Typography>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setAvatarFile(e.target.files ? e.target.files[0] : null)}
-                style={{ display: 'block', marginBottom: '16px' }}
-              />
-              {avatarFile && (
-                <Typography variant="body2" sx={{ mt: 1, mb: 2, color: (theme) => theme.palette.text.secondary }}>
-                  Выбран файл: {avatarFile.name}
-                </Typography>
-              )}
               <Button
                 variant="contained"
                 onClick={handleAvatarUpload}

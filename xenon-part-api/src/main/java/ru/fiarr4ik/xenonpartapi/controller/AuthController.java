@@ -12,6 +12,8 @@ import ru.fiarr4ik.xenonpartapi.dto.LoginRequest;
 import ru.fiarr4ik.xenonpartapi.dto.UpdateUserRequest;
 import ru.fiarr4ik.xenonpartapi.user.UserService;
 import ru.fiarr4ik.xenonpartapi.user.User;
+import ru.fiarr4ik.xenonpartapi.config.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 import java.util.Optional;
@@ -22,10 +24,12 @@ import java.util.HashMap;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -40,27 +44,35 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        Optional<User> userOptional = userService.authenticateUser(loginRequest.getUsername(), loginRequest.getPassword());
+        try {
+            Optional<User> userOptional = userService.authenticateUser(loginRequest.getUsername(), loginRequest.getPassword());
 
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            String token = "token-" + user.getUsername() + "-" + System.currentTimeMillis();
-            Map<String, String> response = new HashMap<>();
-            response.put("token", token);
-            response.put("username", user.getUsername());
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверное имя пользователя или пароль");
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                String token = jwtUtil.generateToken(user.getUsername(), user.getId());
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", token);
+                response.put("username", user.getUsername());
+                response.put("userId", user.getId());
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверное имя пользователя или пароль");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при логине: " + e.getMessage());
         }
     }
 
     @PutMapping("/update")
-    public ResponseEntity<?> updateUser(@RequestBody UpdateUserRequest updateRequest) {
+    public ResponseEntity<?> updateUser(@RequestBody UpdateUserRequest updateRequest, HttpServletRequest request) {
         try {
-            // В реальном приложении здесь нужно получить ID пользователя из токена
-            // Для простоты пока используем ID 1
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не авторизован");
+            }
             User updatedUser = userService.updateUser(
-                1L,
+                userId,
                 updateRequest.getUsername(),
                 updateRequest.getCurrentPassword(),
                 updateRequest.getNewPassword()
@@ -97,27 +109,24 @@ public class AuthController {
     }
 
     @PostMapping("/avatar/upload")
-    public ResponseEntity<?> uploadAvatar(@RequestPart("avatar") MultipartFile avatarFile) {
+    public ResponseEntity<?> uploadAvatar(@RequestPart("avatar") MultipartFile avatarFile, HttpServletRequest request) {
         try {
-            // В реальном приложении здесь нужно получить ID пользователя из токена
-            // Для простоты пока используем ID 1
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не авторизован");
+            }
             if (avatarFile.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Файл аватарки пуст");
             }
 
             byte[] avatarData = avatarFile.getBytes();
-            User updatedUser = userService.updateUserAvatar(1L, avatarData);
+            User updatedUser = userService.updateUserAvatar(userId, avatarData);
 
-            // Можно вернуть что-то полезное, например, подтверждение или часть данных пользователя
             Map<String, String> response = new HashMap<>();
             response.put("message", "Аватарка успешно загружена");
-            // В реальном приложении, возможно, здесь нужно вернуть URL для получения аватарки
-            // или Base64 представление (для небольших)
-
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            // Логируем ошибку на сервере для отладки
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при загрузке аватарки: " + e.getMessage());
         }
