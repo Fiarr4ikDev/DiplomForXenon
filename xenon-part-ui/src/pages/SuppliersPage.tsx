@@ -437,35 +437,41 @@ const SuppliersPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredSuppliers?.map((supplier: Supplier) => (
-                  <TableRow key={supplier.supplierId}>
-                    <TableCell>{supplier.supplierId}</TableCell>
-                    <TableCell>{supplier.name}</TableCell>
-                    <TableCell>{supplier.contactPerson}</TableCell>
-                    <TableCell>{supplier.phone}</TableCell>
-                    <TableCell>{supplier.email}</TableCell>
-                    <TableCell>{supplier.address}</TableCell>
-                    <TableCell sx={{ minWidth: '180px' }}>
-                      <Tooltip title="Редактировать">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedSupplier(supplier);
-                            setOpen(true);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Удалить">
-                        <IconButton
-                          onClick={() => handleDeleteClick(supplier)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+                {filteredSuppliers && filteredSuppliers.length > 0 ? (
+                  filteredSuppliers.map((supplier: Supplier) => (
+                    <TableRow key={supplier.supplierId}>
+                      <TableCell>{supplier.supplierId}</TableCell>
+                      <TableCell>{supplier.name}</TableCell>
+                      <TableCell>{supplier.contactPerson}</TableCell>
+                      <TableCell>{supplier.phone}</TableCell>
+                      <TableCell>{supplier.email}</TableCell>
+                      <TableCell>{supplier.address}</TableCell>
+                      <TableCell sx={{ minWidth: '180px' }}>
+                        <Tooltip title="Редактировать">
+                          <IconButton
+                            onClick={() => {
+                              setSelectedSupplier(supplier);
+                              setOpen(true);
+                            }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Удалить">
+                          <IconButton
+                            onClick={() => handleDeleteClick(supplier)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">Не найдено</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>

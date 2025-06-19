@@ -507,47 +507,53 @@ const PartsPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredParts?.map((part: Part) => (
-                  <TableRow key={part.partId}>
-                    <TableCell>{part.partId}</TableCell>
-                    <TableCell>{part.name}</TableCell>
-                    <TableCell>{part.description}</TableCell>
-                    <TableCell>{part.categoryName}</TableCell>
-                    <TableCell>{part.supplierName}</TableCell>
-                    <TableCell>{part.unitPrice}</TableCell>
-                    <TableCell sx={{ minWidth: '150px' }}>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title="Редактировать">
-                          <IconButton
-                            onClick={() => {
-                              setSelectedPart(part);
-                              setNewPart({
-                                name: part.name,
-                                description: part.description,
-                                categoryId: part.categoryId,
-                                supplierId: part.supplierId,
-                                unitPrice: Number(part.unitPrice)
-                              });
-                              setOpen(true);
-                            }}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Удалить">
-                          <IconButton
-                            onClick={() => {
-                              setSelectedPart(part);
-                              setOpenDelete(true);
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
+                {filteredParts && filteredParts.length > 0 ? (
+                  filteredParts.map((part: Part) => (
+                    <TableRow key={part.partId}>
+                      <TableCell>{part.partId}</TableCell>
+                      <TableCell>{part.name}</TableCell>
+                      <TableCell>{part.description}</TableCell>
+                      <TableCell>{part.categoryName}</TableCell>
+                      <TableCell>{part.supplierName}</TableCell>
+                      <TableCell>{part.unitPrice}</TableCell>
+                      <TableCell sx={{ minWidth: '150px' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Редактировать">
+                            <IconButton
+                              onClick={() => {
+                                setSelectedPart(part);
+                                setNewPart({
+                                  name: part.name,
+                                  description: part.description,
+                                  categoryId: part.categoryId,
+                                  supplierId: part.supplierId,
+                                  unitPrice: Number(part.unitPrice)
+                                });
+                                setOpen(true);
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Удалить">
+                            <IconButton
+                              onClick={() => {
+                                setSelectedPart(part);
+                                setOpenDelete(true);
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">Не найдено</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>

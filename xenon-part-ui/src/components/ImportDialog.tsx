@@ -119,7 +119,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({
         setIsValid(validation.isValid);
 
         if (validation.isValid) {
-          setPreviewData(jsonData.slice(0, 5)); // Показываем только первые 5 строк для превью
+          setPreviewData(jsonData); // Показываем все строки для превью
         }
       } catch (error) {
         setValidationErrors(['Ошибка при чтении файла']);
@@ -191,8 +191,8 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({
         {previewData.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mb: 2 }}>Предпросмотр данных:</Typography>
-            <TableContainer component={Paper}>
-              <Table size="small">
+            <TableContainer component={Paper} sx={{ maxHeight: 300, overflowY: 'auto' }}>
+              <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     {templateHeaders.map((header, index) => (

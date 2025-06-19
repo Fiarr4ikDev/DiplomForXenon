@@ -411,39 +411,45 @@ const CategoriesPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredCategories?.map((category: Category) => (
-                  <TableRow key={category.categoryId}>
-                    <TableCell>{category.categoryId}</TableCell>
-                    <TableCell>{category.name}</TableCell>
-                    <TableCell>{category.description}</TableCell>
-                    <TableCell>
-                      <Tooltip title="Редактировать">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedCategory(category);
-                            setNewCategory({
-                              name: category.name,
-                              description: category.description
-                            });
-                            setOpen(true);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Удалить">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedCategory(category);
-                            setOpenDelete(true);
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+                {filteredCategories && filteredCategories.length > 0 ? (
+                  filteredCategories.map((category: Category) => (
+                    <TableRow key={category.categoryId}>
+                      <TableCell>{category.categoryId}</TableCell>
+                      <TableCell>{category.name}</TableCell>
+                      <TableCell>{category.description}</TableCell>
+                      <TableCell>
+                        <Tooltip title="Редактировать">
+                          <IconButton
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setNewCategory({
+                                name: category.name,
+                                description: category.description
+                              });
+                              setOpen(true);
+                            }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Удалить">
+                          <IconButton
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setOpenDelete(true);
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">Не найдено</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>

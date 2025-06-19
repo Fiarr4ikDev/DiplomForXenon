@@ -525,59 +525,65 @@ const InventoryPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredInventory?.map((item: Inventory) => (
-                  <TableRow key={item.inventoryId}>
-                    <TableCell>{item.inventoryId}</TableCell>
-                    <TableCell>{getPartName(item.partId)}</TableCell>
-                    <TableCell>{item.quantityInStock}</TableCell>
-                    <TableCell>{new Date(item.lastRestockDate).toLocaleDateString()}</TableCell>
-                    <TableCell sx={{ minWidth: '180px' }}>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title="Добавить количество">
-                          <IconButton
-                            onClick={() => {
-                              setSelectedInventory(item);
-                              setOpenAddQuantity(true);
-                            }}
-                          >
-                            <AddCircleIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Уменьшить количество">
-                          <IconButton
-                            onClick={() => {
-                              setSelectedInventory(item);
-                              setOpenRemoveQuantity(true);
-                            }}
-                          >
-                            <RemoveCircleIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Редактировать">
-                          <IconButton
-                            onClick={() => {
-                              setSelectedInventory(item);
-                              setNewInventory({
-                                partId: item.partId,
-                                quantityInStock: item.quantityInStock
-                              });
-                              setOpen(true);
-                            }}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Удалить">
-                          <IconButton
-                            onClick={() => handleDeleteClick(item)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
+                {filteredInventory && filteredInventory.length > 0 ? (
+                  filteredInventory.map((item: Inventory) => (
+                    <TableRow key={item.inventoryId}>
+                      <TableCell>{item.inventoryId}</TableCell>
+                      <TableCell>{getPartName(item.partId)}</TableCell>
+                      <TableCell>{item.quantityInStock}</TableCell>
+                      <TableCell>{new Date(item.lastRestockDate).toLocaleDateString()}</TableCell>
+                      <TableCell sx={{ minWidth: '180px' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Добавить количество">
+                            <IconButton
+                              onClick={() => {
+                                setSelectedInventory(item);
+                                setOpenAddQuantity(true);
+                              }}
+                            >
+                              <AddCircleIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Уменьшить количество">
+                            <IconButton
+                              onClick={() => {
+                                setSelectedInventory(item);
+                                setOpenRemoveQuantity(true);
+                              }}
+                            >
+                              <RemoveCircleIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Редактировать">
+                            <IconButton
+                              onClick={() => {
+                                setSelectedInventory(item);
+                                setNewInventory({
+                                  partId: item.partId,
+                                  quantityInStock: item.quantityInStock
+                                });
+                                setOpen(true);
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Удалить">
+                            <IconButton
+                              onClick={() => handleDeleteClick(item)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">Не найдено</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>
