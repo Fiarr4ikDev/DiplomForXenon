@@ -15,6 +15,14 @@ import { API_URL } from '../config';
 import { useAuth } from '../contexts/AuthContext';
 import PersonIcon from '@mui/icons-material/Person';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+import EditIcon from '@mui/icons-material/Edit';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 interface UpdateUserRequest {
   username: string;
@@ -23,7 +31,7 @@ interface UpdateUserRequest {
 }
 
 const ProfilePage: React.FC = () => {
-  const { isAuthenticated, username, avatarUrl, updateUsername, fetchAndSetAvatar } = useAuth();
+  const { isAuthenticated, username, avatarUrl, updateUsername, fetchAndSetAvatar, logout } = useAuth();
   const [usernameInput, setUsernameInput] = useState<string>(username || '');
   const [currentPassword, setCurrentPassword] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
@@ -39,6 +47,10 @@ const ProfilePage: React.FC = () => {
   });
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const [avatarHover, setAvatarHover] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [editUsername, setEditUsername] = useState(username || '');
+  const [editPassword, setEditPassword] = useState('');
 
   const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -129,81 +141,58 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="md">
+    <Box sx={{ p: 3 }}>
       <Paper elevation={3} sx={{
-        p: { xs: 3, md: 5 },
-        mt: 5,
+        p: 3,
+        mb: 3,
         borderRadius: 3,
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        fontFamily: 'inherit',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: 2,
+        boxShadow: 3,
+        maxWidth: 480,
+        mx: 'auto',
+        mt: 4,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 2,
       }}>
-        <Typography 
-          variant="h4" 
-          component="h1" 
-          gutterBottom 
-          textAlign="center" 
-          sx={{ 
-            fontWeight: 'bold', 
-            mb: 4, 
-            color: (theme) => theme.palette.primary.main,
-            letterSpacing: '1px',
-            textShadow: 'none',
-            background: 'none',
-            WebkitBackgroundClip: 'unset',
-            WebkitTextFillColor: 'unset',
-          }}
-        >
-          Профиль пользователя
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
+          Личный кабинет
         </Typography>
-
-        <Box sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: { xs: 4, sm: 6 },
-          pb: 4,
-          borderBottom: '1px solid',
-          borderColor: (theme) => theme.palette.divider,
-          alignItems: { xs: 'center', sm: 'flex-start' },
-        }}>
+        <Divider sx={{ width: '100%', mb: 2 }} />
+        <Box sx={{ mb: 2, position: 'relative' }}>
           <Box sx={{
-            flexShrink: 0,
-            width: { xs: 120, sm: 150 },
-            height: { xs: 150, sm: 180 },
-            border: '1px solid',
-            borderColor: (theme) => theme.palette.divider,
-            bgcolor: (theme) => theme.palette.grey[100],
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
+            width: 140,
+            height: 140,
+            borderRadius: '50%',
+            border: '3px solid',
+            borderColor: (theme) => theme.palette.primary.main,
+            boxShadow: 4,
             overflow: 'hidden',
-            boxShadow: 1,
-            borderRadius: 2,
-            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: (theme) => theme.palette.grey[100],
             cursor: 'pointer',
+            position: 'relative',
           }}
           onMouseEnter={() => setAvatarHover(true)}
           onMouseLeave={() => setAvatarHover(false)}
           onClick={() => avatarInputRef.current?.click()}
           >
-             <Avatar
+            <Avatar
               sx={{
                 width: '100%',
                 height: '100%',
-                borderRadius: 2,
+                borderRadius: '50%',
                 objectFit: 'cover',
                 bgcolor: (theme) => theme.palette.grey[200],
                 transition: 'filter 0.2s',
                 filter: avatarHover ? 'brightness(0.7)' : 'none',
               }}
               src={avatarUrl || undefined}
-              variant="rounded"
+              variant="circular"
             >
-              {!avatarUrl && <PersonIcon sx={{ fontSize: { xs: 60, sm: 80 }, color: (theme) => theme.palette.grey[400] }} />}
+              {!avatarUrl && <PersonIcon sx={{ fontSize: 80, color: (theme) => theme.palette.grey[400] }} />}
             </Avatar>
             {avatarHover && (
               <Box sx={{
@@ -220,10 +209,10 @@ const ProfilePage: React.FC = () => {
                 color: '#fff',
                 zIndex: 2,
                 pointerEvents: 'none',
-                borderRadius: 2,
+                borderRadius: '50%',
               }}>
-                <PhotoCameraIcon sx={{ fontSize: 40, mb: 1 }} />
-                <Typography variant="body2">Обновить аватарку</Typography>
+                <PhotoCameraIcon sx={{ fontSize: 40, mb: 0.5 }} />
+                <Typography variant="caption" sx={{ fontSize: '0.75rem', mt: 0.5 }}>Обновить аватарку</Typography>
               </Box>
             )}
             <input
@@ -234,93 +223,85 @@ const ProfilePage: React.FC = () => {
               style={{ display: 'none' }}
             />
           </Box>
-
-          <Box sx={{ flexGrow: 1, width: '100%' }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" display="block" gutterBottom sx={{ color: (theme) => theme.palette.text.secondary }}>
-                Имя пользователя / Username
-              </Typography>
-              <Typography variant="h6" component="p" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
-                {username || 'Загрузка...'}
-              </Typography>
-            </Box>
-          </Box>
         </Box>
-
-        <Box sx={{ mt: 4 }}>
-           <Typography variant="h6" component="h3" gutterBottom sx={{ 
-             borderBottom: '1px solid', 
-             borderColor: (theme) => theme.palette.divider, 
-             pb: 1, 
-             mb: 3,
-             color: (theme) => theme.palette.primary.main
-           }}>
-             Обновить данные
-           </Typography>
-
-            <Box component="form" onSubmit={handleUpdate} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
-               <TextField
-                 fullWidth
-                 label="Новое имя пользователя"
-                 value={usernameInput}
-                 onChange={(e) => setUsernameInput(e.target.value)}
-                 variant="outlined"
-                 size="small"
-               />
-               <TextField
-                 fullWidth
-                 label="Текущий пароль (для смены имени или пароля)"
-                 type="password"
-                 value={currentPassword}
-                 onChange={(e) => setCurrentPassword(e.target.value)}
-                 variant="outlined"
-                 size="small"
-                 required
-               />
-               <TextField
-                 fullWidth
-                 label="Новый пароль (оставьте пустым, если не меняете)"
-                 type="password"
-                 value={newPassword}
-                 onChange={(e) => setNewPassword(e.target.value)}
-                 variant="outlined"
-                 size="small"
-               />
-               <Button
-                 type="submit"
-                 variant="contained"
-                 sx={{ py: 1.5, fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
-               >
-                 Сохранить изменения
-               </Button>
-             </Box>
-
-           <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: (theme) => theme.palette.divider }}>
-              <Typography variant="h6" gutterBottom sx={{ color: (theme) => theme.palette.primary.main }}>
-                Загрузить новую аватарку
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={handleAvatarUpload}
-                disabled={!avatarFile}
-                sx={{ py: 1, fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
-              >
-                Загрузить аватарку
-              </Button>
-            </Box>
-        </Box>
+        <Typography 
+          variant="h4"
+          sx={{ 
+            fontWeight: 900, 
+            mb: 0.5, 
+            color: (theme) => theme.palette.primary.main,
+            letterSpacing: 0.5
+          }}
+        >
+          {username}
+        </Typography>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => { setEditUsername(username || ''); setEditOpen(true); }}>Редактировать</Button>
+          <Button variant="contained" color="error" startIcon={<LogoutIcon />} onClick={() => setLogoutOpen(true)}>Выйти</Button>
+        </Stack>
       </Paper>
+
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Редактировать профиль</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="Новое имя пользователя"
+            value={editUsername}
+            onChange={e => setEditUsername(e.target.value)}
+            fullWidth
+            variant="outlined"
+          />
+          <TextField
+            label="Текущий пароль"
+            type="password"
+            value={editPassword}
+            onChange={e => setEditPassword(e.target.value)}
+            fullWidth
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)}>Отмена</Button>
+          <Button variant="contained" onClick={async () => {
+            try {
+              const response = await axios.put(`${API_URL}/auth/update`, {
+                username: editUsername,
+                currentPassword: editPassword,
+                newPassword: '',
+              }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+              });
+              if (response.status === 200) {
+                updateUsername(editUsername);
+                setNotification({ open: true, message: 'Имя пользователя обновлено!', severity: 'success' });
+                setEditOpen(false);
+              }
+            } catch (error: any) {
+              setNotification({ open: true, message: error.response?.data || 'Ошибка при обновлении', severity: 'error' });
+            }
+          }}>Сохранить</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={logoutOpen} onClose={() => setLogoutOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Выйти из аккаунта?</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setLogoutOpen(false)}>Отмена</Button>
+          <Button variant="contained" color="error" onClick={() => { logout(); setLogoutOpen(false); }}>Выйти</Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
           {notification.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 };
 

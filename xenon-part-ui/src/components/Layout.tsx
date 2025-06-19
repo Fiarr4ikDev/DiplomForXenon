@@ -122,7 +122,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
 
           <ListItem
-            onClick={handleMenu}
+            component={RouterLink}
+            to="/profile"
             sx={{
               mt: 'auto',
               borderTop: '1px solid',
@@ -132,6 +133,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 backgroundColor: 'action.hover',
               }
             }}
+            onClick={() => isMobile && handleDrawerToggle()}
           >
             <ListItemIcon>
               <Avatar
@@ -145,41 +147,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {!avatarUrl && <PersonIcon fontSize="small" />}
               </Avatar>
             </ListItemIcon>
-            <ListItemText primary={username || 'Пользователь'} />
+            <ListItemText
+              primary={
+                <Box component="span" sx={{ fontWeight: 900, color: (theme) => theme.palette.primary.main }}>
+                  {username || 'Пользователь'}
+                </Box>
+              }
+            />
           </ListItem>
-
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleMenuClose} component={RouterLink} to="/profile">
-              <ListItemIcon>
-                <PersonIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Профиль</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={() => {
-              handleMenuClose();
-              logout();
-              if (isMobile) handleDrawerToggle();
-            }}>
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Выйти</ListItemText>
-            </MenuItem>
-          </Menu>
 
         </List>
       ) : (
