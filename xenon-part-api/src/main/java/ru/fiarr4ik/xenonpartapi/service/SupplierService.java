@@ -1,12 +1,11 @@
 package ru.fiarr4ik.xenonpartapi.service;
 
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.fiarr4ik.xenonpartapi.dto.SupplierRequestDTO;
 import ru.fiarr4ik.xenonpartapi.dto.SupplierResponseDTO;
 import ru.fiarr4ik.xenonpartapi.entity.Supplier;
-import ru.fiarr4ik.xenonpartapi.mapper.SupplierMapper;
+import ru.fiarr4ik.xenonpartapi.mapper.GlobalMapper;
 import ru.fiarr4ik.xenonpartapi.repository.SupplierRepository;
 
 import java.util.List;
@@ -20,7 +19,7 @@ import java.util.stream.Collectors;
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
-    private final SupplierMapper supplierMapper;
+    private final GlobalMapper supplierMapper;
 
     /**
      * Создает нового поставщика.
@@ -30,9 +29,9 @@ public class SupplierService {
      */
     public SupplierResponseDTO create(SupplierRequestDTO requestDTO) {
         try {
-            Supplier supplier = supplierMapper.toEntity(requestDTO);
+            Supplier supplier = supplierMapper.toSupplierEntity(requestDTO);
             Supplier saved = supplierRepository.save(supplier);
-            return supplierMapper.toResponseDTO(saved);
+            return supplierMapper.toSupplierResponseDto(saved);
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при создании поставщика: " + e.getMessage());
         }
@@ -45,7 +44,7 @@ public class SupplierService {
      */
     public List<SupplierResponseDTO> findAll() {
         return supplierRepository.findAll().stream()
-                .map(supplierMapper::toResponseDTO)
+                .map(supplierMapper::toSupplierResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -58,7 +57,7 @@ public class SupplierService {
     public SupplierResponseDTO findById(Long id) {
         Supplier supplier = supplierRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Поставщик не найден: " + id));
-        return supplierMapper.toResponseDTO(supplier);
+        return supplierMapper.toSupplierResponseDto(supplier);
     }
 
     /**
@@ -71,9 +70,9 @@ public class SupplierService {
     public SupplierResponseDTO update(Long id, SupplierRequestDTO requestDTO) {
         Supplier existing = supplierRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Поставщик не найден: " + id));
-        supplierMapper.updateEntityFromDto(requestDTO, existing);
+        supplierMapper.updateSupplierFromDto(requestDTO, existing);
         Supplier updated = supplierRepository.save(existing);
-        return supplierMapper.toResponseDTO(updated);
+        return supplierMapper.toSupplierResponseDto(updated);
     }
 
     /**

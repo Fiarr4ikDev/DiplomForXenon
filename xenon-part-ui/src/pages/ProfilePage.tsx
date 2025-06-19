@@ -119,16 +119,17 @@ const ProfilePage: React.FC = () => {
 
   return (
     <Container maxWidth="md">
-      <Paper elevation={6} sx={{
-        p: { xs: 3, md: 6 },
+      <Paper elevation={3} sx={{
+        p: { xs: 3, md: 5 },
         mt: 5,
-        borderRadius: 2,
+        borderRadius: 3,
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        fontFamily: 'monospace',
+        fontFamily: 'inherit',
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: 2,
       }}>
         <Typography 
           variant="h4" 
@@ -138,14 +139,15 @@ const ProfilePage: React.FC = () => {
           sx={{ 
             fontWeight: 'bold', 
             mb: 4, 
-            background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textShadow: (theme) => `2px 2px 4px ${theme.palette.primary.dark}20`,
-            letterSpacing: '1px'
+            color: (theme) => theme.palette.primary.main,
+            letterSpacing: '1px',
+            textShadow: 'none',
+            background: 'none',
+            WebkitBackgroundClip: 'unset',
+            WebkitTextFillColor: 'unset',
           }}
         >
-          Профиль пользователя {username}
+          Профиль пользователя
         </Typography>
 
         <Box sx={{
@@ -153,43 +155,45 @@ const ProfilePage: React.FC = () => {
           flexDirection: { xs: 'column', sm: 'row' },
           gap: { xs: 4, sm: 6 },
           pb: 4,
-          borderBottom: '1px dashed',
-          borderColor: (theme) => theme.palette.primary.main,
+          borderBottom: '1px solid',
+          borderColor: (theme) => theme.palette.divider,
           alignItems: { xs: 'center', sm: 'flex-start' },
         }}>
           <Box sx={{
             flexShrink: 0,
             width: { xs: 120, sm: 150 },
             height: { xs: 150, sm: 180 },
-            border: '2px solid',
-            borderColor: (theme) => theme.palette.primary.main,
-            bgcolor: (theme) => theme.palette.primary.light,
+            border: '1px solid',
+            borderColor: (theme) => theme.palette.divider,
+            bgcolor: (theme) => theme.palette.grey[100],
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             overflow: 'hidden',
-            boxShadow: (theme) => `0 4px 8px ${theme.palette.primary.dark}20`,
+            boxShadow: 1,
+            borderRadius: 2,
           }}>
              <Avatar
               sx={{
                 width: '100%',
                 height: '100%',
-                borderRadius: 0,
+                borderRadius: 2,
                 objectFit: 'cover',
+                bgcolor: (theme) => theme.palette.grey[200],
               }}
               src={avatarUrl || undefined}
-              variant="square"
+              variant="rounded"
             >
-              {!avatarUrl && <PersonIcon sx={{ fontSize: { xs: 60, sm: 80 }, color: (theme) => theme.palette.primary.dark }} />}
+              {!avatarUrl && <PersonIcon sx={{ fontSize: { xs: 60, sm: 80 }, color: (theme) => theme.palette.grey[400] }} />}
             </Avatar>
           </Box>
 
           <Box sx={{ flexGrow: 1, width: '100%' }}>
             <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" display="block" gutterBottom sx={{ color: (theme) => theme.palette.primary.main }}>
+              <Typography variant="caption" display="block" gutterBottom sx={{ color: (theme) => theme.palette.text.secondary }}>
                 Имя пользователя / Username
               </Typography>
-              <Typography variant="h6" component="p" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.primary.dark }}>
+              <Typography variant="h6" component="p" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
                 {username || 'Загрузка...'}
               </Typography>
             </Box>
@@ -199,7 +203,7 @@ const ProfilePage: React.FC = () => {
         <Box sx={{ mt: 4 }}>
            <Typography variant="h6" component="h3" gutterBottom sx={{ 
              borderBottom: '1px solid', 
-             borderColor: (theme) => theme.palette.primary.main, 
+             borderColor: (theme) => theme.palette.divider, 
              pb: 1, 
              mb: 3,
              color: (theme) => theme.palette.primary.main
@@ -215,13 +219,6 @@ const ProfilePage: React.FC = () => {
                  onChange={(e) => setUsernameInput(e.target.value)}
                  variant="outlined"
                  size="small"
-                 sx={{
-                   '& .MuiOutlinedInput-root': {
-                     '&:hover fieldset': {
-                       borderColor: (theme) => theme.palette.primary.main,
-                     },
-                   },
-                 }}
                />
                <TextField
                  fullWidth
@@ -232,13 +229,6 @@ const ProfilePage: React.FC = () => {
                  variant="outlined"
                  size="small"
                  required
-                 sx={{
-                   '& .MuiOutlinedInput-root': {
-                     '&:hover fieldset': {
-                       borderColor: (theme) => theme.palette.primary.main,
-                     },
-                   },
-                 }}
                />
                <TextField
                  fullWidth
@@ -248,30 +238,17 @@ const ProfilePage: React.FC = () => {
                  onChange={(e) => setNewPassword(e.target.value)}
                  variant="outlined"
                  size="small"
-                 sx={{
-                   '& .MuiOutlinedInput-root': {
-                     '&:hover fieldset': {
-                       borderColor: (theme) => theme.palette.primary.main,
-                     },
-                   },
-                 }}
                />
                <Button
                  type="submit"
                  variant="contained"
-                 sx={{ 
-                   py: 1.5,
-                   background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-                   '&:hover': {
-                     background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.dark} 30%, ${theme.palette.secondary.dark} 90%)`,
-                   }
-                 }}
+                 sx={{ py: 1.5, fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
                >
                  Сохранить изменения
                </Button>
              </Box>
 
-           <Box sx={{ mt: 4, pt: 3, borderTop: '1px dashed', borderColor: (theme) => theme.palette.primary.main }}>
+           <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: (theme) => theme.palette.divider }}>
               <Typography variant="h6" gutterBottom sx={{ color: (theme) => theme.palette.primary.main }}>
                 Загрузить новую аватарку
               </Typography>
@@ -282,7 +259,7 @@ const ProfilePage: React.FC = () => {
                 style={{ display: 'block', marginBottom: '16px' }}
               />
               {avatarFile && (
-                <Typography variant="body2" sx={{ mt: 1, mb: 2, color: (theme) => theme.palette.primary.main }}>
+                <Typography variant="body2" sx={{ mt: 1, mb: 2, color: (theme) => theme.palette.text.secondary }}>
                   Выбран файл: {avatarFile.name}
                 </Typography>
               )}
@@ -290,13 +267,7 @@ const ProfilePage: React.FC = () => {
                 variant="contained"
                 onClick={handleAvatarUpload}
                 disabled={!avatarFile}
-                sx={{ 
-                  py: 1,
-                  background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-                  '&:hover': {
-                    background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.dark} 30%, ${theme.palette.secondary.dark} 90%)`,
-                  }
-                }}
+                sx={{ py: 1, fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
               >
                 Загрузить аватарку
               </Button>

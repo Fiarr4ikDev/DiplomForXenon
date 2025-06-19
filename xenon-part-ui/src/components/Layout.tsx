@@ -67,7 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: 'Категории', icon: <CategoryIcon />, path: '/categories' },
     { text: 'Поставщики', icon: <LocalShippingIcon />, path: '/suppliers' },
     { text: 'Запчасти', icon: <BuildIcon />, path: '/parts' },
-    { text: 'Инвентарь', icon: <InventoryIcon />, path: '/inventory' },
+    { text: 'Остатки', icon: <InventoryIcon />, path: '/inventory' },
     { text: 'Конфигурация', icon: <TuneIcon />, path: '/configuration' },
     { text: 'Настройки', icon: <SettingsIcon />, path: '/settings' },
   ];
@@ -99,20 +99,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {isAuthenticated ? (
         <List sx={{ overflowX: 'hidden', flexGrow: 1 }}>
           {menuItems.map((item) => (
-            <ListItem
-              key={item.text}
-              component={RouterLink}
-              to={item.path}
-              onClick={() => isMobile && handleDrawerToggle()}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                }
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItem>
+              <ListItem
+                  key={item.text}
+                  component={RouterLink}
+                  to={item.path}
+                  onClick={() => isMobile && handleDrawerToggle()}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                    color: (theme) => theme.palette.primary.main,
+                    fontWeight: 'bold',
+                    '& .MuiListItemText-primary': {
+                      color: (theme) => theme.palette.primary.main,
+                      fontWeight: 'bold',
+                    }
+                  }}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
           ))}
 
           <ListItem

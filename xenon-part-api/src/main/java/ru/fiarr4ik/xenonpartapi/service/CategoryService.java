@@ -2,12 +2,11 @@ package ru.fiarr4ik.xenonpartapi.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.fiarr4ik.xenonpartapi.dto.CategoryRequestDTO;
 import ru.fiarr4ik.xenonpartapi.dto.CategoryResponseDTO;
 import ru.fiarr4ik.xenonpartapi.entity.Category;
 import ru.fiarr4ik.xenonpartapi.exception.EntityNotFoundException;
-import ru.fiarr4ik.xenonpartapi.mapper.CategoryMapper;
+import ru.fiarr4ik.xenonpartapi.mapper.GlobalMapper;
 import ru.fiarr4ik.xenonpartapi.repository.CategoryRepository;
 
 import java.util.List;
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final CategoryMapper categoryMapper;
+    private final GlobalMapper categoryMapper;
 
     /**
      * Создает новую категорию.
@@ -30,9 +29,9 @@ public class CategoryService {
      * @return созданная категория
      */
     public CategoryResponseDTO create(CategoryRequestDTO requestDto) {
-        Category category = categoryMapper.toEntity(requestDto);
+        Category category = categoryMapper.toCategoryEntity(requestDto);
         Category saved = categoryRepository.save(category);
-        return categoryMapper.toResponseDto(saved);
+        return categoryMapper.toCategoryResponseDto(saved);
     }
 
     /**
@@ -42,7 +41,7 @@ public class CategoryService {
      */
     public List<CategoryResponseDTO> findAll() {
         return categoryRepository.findAll().stream()
-                .map(categoryMapper::toResponseDto)
+                .map(categoryMapper::toCategoryResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -55,7 +54,7 @@ public class CategoryService {
     public CategoryResponseDTO findById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Категория не найдена: " + id));
-        return categoryMapper.toResponseDto(category);
+        return categoryMapper.toCategoryResponseDto(category);
     }
 
     /**
@@ -68,9 +67,9 @@ public class CategoryService {
     public CategoryResponseDTO update(Long id, CategoryRequestDTO requestDto) {
         Category existing = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Категория не найдена: " + id));
-        categoryMapper.updateEntityFromDto(requestDto, existing);
+        categoryMapper.updateCategoryFromDto(requestDto, existing);
         Category updated = categoryRepository.save(existing);
-        return categoryMapper.toResponseDto(updated);
+        return categoryMapper.toCategoryResponseDto(updated);
     }
 
     /**

@@ -2,13 +2,12 @@ package ru.fiarr4ik.xenonpartapi.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.fiarr4ik.xenonpartapi.dto.InventoryRequestDTO;
 import ru.fiarr4ik.xenonpartapi.dto.InventoryResponseDTO;
 import ru.fiarr4ik.xenonpartapi.entity.Inventory;
 import ru.fiarr4ik.xenonpartapi.exception.ResourceNotFoundException;
+import ru.fiarr4ik.xenonpartapi.mapper.GlobalMapper;
 import ru.fiarr4ik.xenonpartapi.repository.InventoryRepository;
-import ru.fiarr4ik.xenonpartapi.mapper.InventoryMapper;
 import ru.fiarr4ik.xenonpartapi.repository.PartRepository;
 import ru.fiarr4ik.xenonpartapi.entity.Part;
 import java.time.LocalDateTime;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
-    private final InventoryMapper inventoryMapper;
+    private final GlobalMapper inventoryMapper;
     private final PartRepository partRepository;
 
     /**
@@ -36,10 +35,10 @@ public class InventoryService {
     public InventoryResponseDTO create(InventoryRequestDTO requestDto) {
         Part part = partRepository.findById(requestDto.getPartId())
                 .orElseThrow(() -> new RuntimeException("Запчасть не найдена: " + requestDto.getPartId()));
-        Inventory inventory = inventoryMapper.toEntity(requestDto);
+        Inventory inventory = inventoryMapper.toInventoryEntity(requestDto);
         inventory.setPart(part);
         Inventory savedInventory = inventoryRepository.save(inventory);
-        return inventoryMapper.toDto(savedInventory);
+        return inventoryMapper.toInventoryResponseDto(savedInventory);
     }
 
     /**
@@ -49,7 +48,7 @@ public class InventoryService {
      */
     public List<InventoryResponseDTO> findAll() {
         return inventoryRepository.findAll().stream()
-                .map(inventoryMapper::toDto)
+                .map(inventoryMapper::toInventoryResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -62,7 +61,7 @@ public class InventoryService {
     public InventoryResponseDTO findById(Long id) {
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + id));
-        return inventoryMapper.toDto(inventory);
+        return inventoryMapper.toInventoryResponseDto(inventory);
     }
 
     /**
@@ -77,10 +76,10 @@ public class InventoryService {
                 .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + id));
         Part part = partRepository.findById(requestDto.getPartId())
                 .orElseThrow(() -> new RuntimeException("Запчасть не найдена: " + requestDto.getPartId()));
-        inventoryMapper.updateEntityFromDto(requestDto, inventory);
+        inventoryMapper.updateInventoryFromDto(requestDto, inventory);
         inventory.setPart(part);
         Inventory updatedInventory = inventoryRepository.save(inventory);
-        return inventoryMapper.toDto(updatedInventory);
+        return inventoryMapper.toInventoryResponseDto(updatedInventory);
     }
 
     /**
@@ -117,7 +116,7 @@ public class InventoryService {
         inventory.setLastRestockDate(LocalDateTime.now());
 
         Inventory savedInventory = inventoryRepository.save(inventory);
-        return inventoryMapper.toDto(savedInventory);
+        return inventoryMapper.toInventoryResponseDto(savedInventory);
     }
 
     /**
@@ -141,6 +140,6 @@ public class InventoryService {
         inventory.setLastRestockDate(LocalDateTime.now());
 
         Inventory savedInventory = inventoryRepository.save(inventory);
-        return inventoryMapper.toDto(savedInventory);
+        return inventoryMapper.toInventoryResponseDto(savedInventory);
     }
 }
